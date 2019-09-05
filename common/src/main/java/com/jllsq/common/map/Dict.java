@@ -173,4 +173,12 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
         }
     }
 
+    public int dictGenHashFunction(byte[] buf) {
+        int hash = 5381;
+        for (int i = 0;i < buf.length;i ++) {
+            hash = ((hash << 5) + hash) + buf[i];
+        }
+        return hash;
+    }
+
 }

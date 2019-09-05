@@ -136,4 +136,8 @@ public class SDS{
     public String getContent() {
         return new String(this.content, 0, this.used);
     }
+
+    public byte[] getBytes() {
+        return this.content;
+    }
 }

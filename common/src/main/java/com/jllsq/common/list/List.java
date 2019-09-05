@@ -1,7 +1,9 @@
 package com.jllsq.common.list;
 
-public interface List {
+public class List {
 
-
+    public int length(){
+        return 0;
+    }
 
 }
