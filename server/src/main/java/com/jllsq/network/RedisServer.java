@@ -1,9 +1,6 @@
 package com.jllsq.network;
 
-import com.jllsq.common.entity.RedisClient;
-import com.jllsq.common.entity.RedisDb;
-import com.jllsq.common.entity.RedisObject;
-import com.jllsq.common.entity.SaveParam;
+import com.jllsq.common.entity.*;
 import com.jllsq.common.map.Dict;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
@@ -29,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
@@ -37,8 +35,6 @@ import static com.jllsq.common.entity.RedisObject.REDIS_STRING;
 
 @Data
 public class RedisServer {
-
-
 
     private static String TIME_OUT = "timeout";
     private static String PORT = "port";
@@ -115,6 +111,7 @@ public class RedisServer {
     private FileChannel devnull;
     private List objFreeList;
     private ServerBootstrap b;
+    private HashMap<SDS, RedisCommand> redisCommandTable;
 
     private long cronLoops;
     private int maxClients;
@@ -141,7 +138,7 @@ public class RedisServer {
                             ch.pipeline()
                                     .addLast(new RedisCommandDecoder())
                                     .addLast(
-                                    new RedisServerHandler());
+                                    new RedisServerHandler(RedisServer.this));
                         }
                     });
 
@@ -161,6 +158,7 @@ public class RedisServer {
             e.printStackTrace();
         }
         createShareObjects();
+        initCommand();
         this.db = new RedisDb[this.dbNum];
         for (int i = 0;i < this.dbNum;i ++) {
             this.db[i] = new RedisDb(i);
@@ -181,7 +179,7 @@ public class RedisServer {
     }
 
     private void createShareObjects() {
-        this.shared = Shared.ShardEnum.SHARD.getInstance();
+        this.shared = Shared.getInstance();
         this.shared.setCrlf(createObject(REDIS_STRING,new SDS("\r\n")));
         this.shared.setOk(createObject(REDIS_STRING,new SDS("+OK\r\n")));
         this.shared.setErr(createObject(REDIS_STRING,new SDS("-ERR\r\n")));
@@ -210,6 +208,25 @@ public class RedisServer {
         this.shared.setSelect7(createObject(REDIS_STRING,new SDS("select 7\r\n")));
         this.shared.setSelect8(createObject(REDIS_STRING,new SDS("select 8\r\n")));
         this.shared.setSelect9(createObject(REDIS_STRING,new SDS("select 9\r\n")));
+    }
+
+    private void initCommand() {
+        redisCommandTable = new HashMap<>();
+        redisCommandTable.put(new SDS("set"), new RedisCommand(new SDS("SET"),1) {
+            @Override
+            public RedisCommandResponse process(RedisClient client) {
+                int db = client.getDictId();
+                RedisCommandResponse response = new RedisCommandResponse();
+                RedisObject[] objects = new RedisObject[1];
+                if (getDb()[db].getDict().add(client.getArgv()[1],client.getArgv()[2])) {
+                    objects[0] = getShared().getCone();
+                } else {
+                    objects[0] = getShared().getCzero();
+                }
+                response.setResponse(objects);
+                return response;
+            }
+        });
     }
 
     private void loadServerConfig(String configFileName) {
@@ -400,4 +417,5 @@ public class RedisServer {
         this.saveParams = temp;
         this.saveParamLen = this.saveParamLen+1;
     }
+
 }

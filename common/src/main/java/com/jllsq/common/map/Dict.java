@@ -27,14 +27,24 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
     }
 
     public Dict expand(int size) {
-        this.table = new DictEntry[size];
-        this.sizeMask = this.size - 1;
+        DictEntry[] temp = new DictEntry[size];
+        int sizeMask = size - 1;
         Iterator<DictEntry<U,T>> iterator = this.iterator();
         int hash;
         while (iterator.hasNext()){
             DictEntry<U,T> dictEntry = iterator.next();
-            this.add(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()));
+            int hash2 = hashFunction(this.type.keyDup(dictEntry.getKey())) & sizeMask;
+            if (temp[hash2] == null) {
+                temp[hash2] = new DictEntry(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()));
+            } else {
+                DictEntry<U,T> tempEntry = temp[hash2];
+                DictEntry newEntry = new DictEntry(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()),tempEntry);
+                temp[hash2] = newEntry;
+            }
         }
+        this.table = temp;
+        this.sizeMask = sizeMask;
+        this.size = size;
         return this;
     }
 
@@ -160,6 +170,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
             if (entry == null) {
                 label = 1;
             }
+
             while(entry == null) {
                 index ++;
                 entry = this.dict.table[index];

@@ -140,4 +140,34 @@ public class SDS{
     public byte[] getBytes() {
         return this.content;
     }
+
+    public void setBytes(byte[] content) {
+        this.length = content.length;
+        this.content = content;
+    }
+
+    public void setUsed(int used) {
+        this.used = used;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof SDS)) {
+            return false;
+        }
+        if (((SDS) obj).used != this.used) {
+            return false;
+        }
+        for (int i = 0;i < used;i ++) {
+            if (content[i] != ((SDS) obj).getBytes()[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return getContent().hashCode();
+    }
 }

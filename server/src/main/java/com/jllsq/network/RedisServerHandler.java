@@ -1,6 +1,10 @@
 package com.jllsq.network;
 
+import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisCommand;
+import com.jllsq.common.entity.RedisCommandResponse;
+import com.jllsq.common.entity.RedisObject;
+import com.jllsq.common.sds.SDS;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -12,14 +16,25 @@ import io.netty.util.CharsetUtil;
 @ChannelHandler.Sharable
 public class RedisServerHandler extends ChannelInboundHandlerAdapter {
 
+    private RedisServer redisServer;
+
+    public RedisServerHandler(RedisServer redisServer) {
+        super();
+        this.redisServer = redisServer;
+    }
+
     @Override
     public void channelRead(ChannelHandlerContext context, Object message){
-        RedisCommand redisCommand = (RedisCommand) message;
-        for (int i = 0;i < redisCommand.getArgc();i ++){
-            System.out.println(redisCommand.getArgv()[i].getContent());
+        RedisClient client = (RedisClient) message;
+        RedisCommand command = redisServer.getRedisCommandTable().get(client.getArgv()[0]);
+        RedisCommandResponse response = command.process(client);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0;i < response.getResponse().length;i ++) {
+            RedisObject redisObject = response.getResponse()[i];
+            if (redisObject.getType() == RedisObject.REDIS_STRING) {
+                context.write(Unpooled.copiedBuffer(((SDS)redisObject.getPtr()).getBytes()));
+            }
         }
-        ByteBuf byteBuf = Unpooled.copiedBuffer("*1\r\n$2\r\nOK\r\n",CharsetUtil.UTF_8);
-        context.write(byteBuf);
     }
 
     @Override

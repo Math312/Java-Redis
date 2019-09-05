@@ -1,19 +1,41 @@
 package com.jllsq.common.map;
 
+import com.jllsq.common.sds.SDS;
+
 public class DbDictType<U,T> implements DictType<U,T> {
-
-    public DbDictType() {
-
-    }
 
     @Override
     public U keyDup(U key) {
-        return null;
+        SDS keySds = new SDS();
+        if (key instanceof SDS) {
+            keySds.setUsed(((SDS) key).getUsed());
+            byte[] content = new byte[((SDS) key).getLength()];
+            for (int i = 0;i < ((SDS) key).getLength();i ++) {
+                content[i] = ((SDS) key).getBytes()[i];
+            }
+            keySds.setBytes(content);
+        } else {
+            keySds = new SDS(key.toString());
+        }
+
+        return (U) keySds;
     }
 
     @Override
     public T valueDup(T value) {
-        return null;
+        SDS keySds = new SDS();
+        if (value instanceof SDS) {
+            keySds.setUsed(((SDS) value).getUsed());
+            byte[] content = new byte[((SDS) value).getLength()];
+            for (int i = 0;i < ((SDS) value).getLength();i ++) {
+                content[i] = ((SDS) value).getBytes()[i];
+            }
+            keySds.setBytes(content);
+        } else {
+            keySds = new SDS(value.toString());
+        }
+
+        return (T) keySds;
     }
 
     @Override

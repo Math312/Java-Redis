@@ -16,7 +16,11 @@ public class  Shared {
 
     }
 
-    public static enum ShardEnum {
+    public static Shared getInstance() {
+        return ShardEnum.SHARD.getInstance();
+    }
+
+    static enum ShardEnum {
         SHARD;
         private Shared shared;
         ShardEnum() {

@@ -1,7 +1,9 @@
 package com.jllsq.decoder;
 
+import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisCommand;
 import com.jllsq.common.sds.SDS;
+import com.sun.security.ntlm.Client;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,7 +18,7 @@ public class RedisCommandDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         if (in.isReadable()){
-            RedisCommand redisCommand = new RedisCommand();
+            RedisClient client = new RedisClient();
             if (in.readByte() != '*') {
                 System.out.println("error");
             }
@@ -45,7 +47,10 @@ public class RedisCommandDecoder extends ByteToMessageDecoder {
                 System.out.println(argv[i].getContent());
                 ByteBuf nextLine = in.readBytes(2);
             }
-            out.add(redisCommand);
+            client.setDictId(0);
+            client.setArgc(length);
+            client.setArgv(argv);
+            out.add(client);
         }
     }
 
