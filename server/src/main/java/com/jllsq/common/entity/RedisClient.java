@@ -11,7 +11,7 @@ public class RedisClient {
     private RedisDb db;
     private int dictId;
     private int argc;
-    private SDS[] argv;
+    private RedisObject[] argv;
 
     public RedisClient() {
 

@@ -2,21 +2,19 @@ package com.jllsq.network;
 
 import com.jllsq.common.entity.*;
 import com.jllsq.common.map.Dict;
+import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
-import com.jllsq.decoder.RedisCommandDecoder;
+import com.jllsq.decoder.RedisObjectDecoder;
+import com.jllsq.decoder.RedisObjectEncoder;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoop;
-import io.netty.channel.SingleThreadEventLoop;
 import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import com.jllsq.common.list.List;
-import io.netty.util.HashedWheelTimer;
 import lombok.Data;
 
 import java.io.*;
@@ -27,10 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.concurrent.TimeUnit;
 
-import static com.jllsq.common.entity.RedisObject.REDIS_ENCODING_RAW;
 import static com.jllsq.common.entity.RedisObject.REDIS_STRING;
 
 @Data
@@ -136,9 +131,7 @@ public class RedisServer {
                         public void initChannel(SocketChannel ch)
                                 throws Exception {
                             ch.pipeline()
-                                    .addLast(new RedisCommandDecoder())
-                                    .addLast(
-                                    new RedisServerHandler(RedisServer.this));
+                                    .addLast(new RedisObjectDecoder(),new RedisObjectEncoder(),new RedisServerHandler(RedisServer.this));
                         }
                     });
 
@@ -166,65 +159,78 @@ public class RedisServer {
         this.cronLoops = 0;
     }
 
-    private RedisObject createObject(byte type, Object ptr) {
+    private RedisObject createObject(boolean isShared,byte type, Object ptr) {
         RedisObject redisObject = null;
         if (this.objFreeList.length() > 0){
             // Get the first node.
             // Change the data of the node.
             // Remove the node from objFreeList.
         } else {
-            redisObject = new RedisObject(type,ptr);
+            redisObject = new RedisObject(isShared,type,ptr);
         }
         return redisObject;
     }
 
     private void createShareObjects() {
         this.shared = Shared.getInstance();
-        this.shared.setCrlf(createObject(REDIS_STRING,new SDS("\r\n")));
-        this.shared.setOk(createObject(REDIS_STRING,new SDS("+OK\r\n")));
-        this.shared.setErr(createObject(REDIS_STRING,new SDS("-ERR\r\n")));
-        this.shared.setEmptybulk(createObject(REDIS_STRING,new SDS("$0\r\n\r\n")));
-        this.shared.setCzero(createObject(REDIS_STRING,new SDS(":0\r\n")));
-        this.shared.setCone(createObject(REDIS_STRING,new SDS(":1\r\n")));
-        this.shared.setNullbulk(createObject(REDIS_STRING,new SDS("$-1\r\n")));
-        this.shared.setNullmultibulk(createObject(REDIS_STRING,new SDS("*-1\r\n")));
-        this.shared.setEmptymultibulk(createObject(REDIS_STRING,new SDS("*0\r\n")));
-        this.shared.setPong(createObject(REDIS_STRING,new SDS("+PONG\r\n")));
-        this.shared.setQueued(createObject(REDIS_STRING,new SDS("+QUEUED\r\n")));
-        this.shared.setWrongtypeerr(createObject(REDIS_STRING,new SDS("-ERR Operation against a key holding the wrong kind of value\r\n")));
-        this.shared.setNokeyerr(createObject(REDIS_STRING,new SDS("-ERR no such key\r\n")));
-        this.shared.setSyntaxerr(createObject(REDIS_STRING,new SDS("-ERR syntax error\r\n")));
-        this.shared.setOutofrangeerr(createObject(REDIS_STRING,new SDS("-ERR source and destination objects are the same\r\n")));
-        this.shared.setSpace(createObject(REDIS_STRING,new SDS(" ")));
-        this.shared.setColon(createObject(REDIS_STRING,new SDS(":")));
-        this.shared.setPlus(createObject(REDIS_STRING,new SDS("+")));
-        this.shared.setSelect0(createObject(REDIS_STRING,new SDS("select 0\r\n")));
-        this.shared.setSelect1(createObject(REDIS_STRING,new SDS("select 1\r\n")));
-        this.shared.setSelect2(createObject(REDIS_STRING,new SDS("select 2\r\n")));
-        this.shared.setSelect3(createObject(REDIS_STRING,new SDS("select 3\r\n")));
-        this.shared.setSelect4(createObject(REDIS_STRING,new SDS("select 4\r\n")));
-        this.shared.setSelect5(createObject(REDIS_STRING,new SDS("select 5\r\n")));
-        this.shared.setSelect6(createObject(REDIS_STRING,new SDS("select 6\r\n")));
-        this.shared.setSelect7(createObject(REDIS_STRING,new SDS("select 7\r\n")));
-        this.shared.setSelect8(createObject(REDIS_STRING,new SDS("select 8\r\n")));
-        this.shared.setSelect9(createObject(REDIS_STRING,new SDS("select 9\r\n")));
+        this.shared.setCrlf(createObject(true,REDIS_STRING,new SDS("\r\n")));
+        this.shared.setOk(createObject(true,REDIS_STRING,new SDS("+OK\r\n")));
+        this.shared.setErr(createObject(true,REDIS_STRING,new SDS("-ERR\r\n")));
+        this.shared.setEmptybulk(createObject(true,REDIS_STRING,new SDS("$0\r\n\r\n")));
+        this.shared.setCzero(createObject(true,REDIS_STRING,new SDS(":0\r\n")));
+        this.shared.setCone(createObject(true,REDIS_STRING,new SDS(":1\r\n")));
+        this.shared.setNullbulk(createObject(true,REDIS_STRING,new SDS("$-1\r\n")));
+        this.shared.setNullmultibulk(createObject(true,REDIS_STRING,new SDS("*-1\r\n")));
+        this.shared.setEmptymultibulk(createObject(true,REDIS_STRING,new SDS("*0\r\n")));
+        this.shared.setPong(createObject(true,REDIS_STRING,new SDS("+PONG\r\n")));
+        this.shared.setQueued(createObject(true,REDIS_STRING,new SDS("+QUEUED\r\n")));
+        this.shared.setWrongtypeerr(createObject(true,REDIS_STRING,new SDS("-ERR Operation against a key holding the wrong kind of value\r\n")));
+        this.shared.setNokeyerr(createObject(true,REDIS_STRING,new SDS("-ERR no such key\r\n")));
+        this.shared.setSyntaxerr(createObject(true,REDIS_STRING,new SDS("-ERR syntax error\r\n")));
+        this.shared.setOutofrangeerr(createObject(true,REDIS_STRING,new SDS("-ERR source and destination objects are the same\r\n")));
+        this.shared.setSpace(createObject(true,REDIS_STRING,new SDS(" ")));
+        this.shared.setColon(createObject(true,REDIS_STRING,new SDS(":")));
+        this.shared.setPlus(createObject(true,REDIS_STRING,new SDS("+")));
+        this.shared.setSelect0(createObject(true,REDIS_STRING,new SDS("select 0\r\n")));
+        this.shared.setSelect1(createObject(true,REDIS_STRING,new SDS("select 1\r\n")));
+        this.shared.setSelect2(createObject(true,REDIS_STRING,new SDS("select 2\r\n")));
+        this.shared.setSelect3(createObject(true,REDIS_STRING,new SDS("select 3\r\n")));
+        this.shared.setSelect4(createObject(true,REDIS_STRING,new SDS("select 4\r\n")));
+        this.shared.setSelect5(createObject(true,REDIS_STRING,new SDS("select 5\r\n")));
+        this.shared.setSelect6(createObject(true,REDIS_STRING,new SDS("select 6\r\n")));
+        this.shared.setSelect7(createObject(true,REDIS_STRING,new SDS("select 7\r\n")));
+        this.shared.setSelect8(createObject(true,REDIS_STRING,new SDS("select 8\r\n")));
+        this.shared.setSelect9(createObject(true,REDIS_STRING,new SDS("select 9\r\n")));
     }
 
     private void initCommand() {
         redisCommandTable = new HashMap<>();
         redisCommandTable.put(new SDS("set"), new RedisCommand(new SDS("SET"),1) {
             @Override
-            public RedisCommandResponse process(RedisClient client) {
+            public RedisObject process(RedisClient client) {
                 int db = client.getDictId();
-                RedisCommandResponse response = new RedisCommandResponse();
-                RedisObject[] objects = new RedisObject[1];
+                RedisObject result = null;
                 if (getDb()[db].getDict().add(client.getArgv()[1],client.getArgv()[2])) {
-                    objects[0] = getShared().getCone();
+                    result = getShared().getCone();
                 } else {
-                    objects[0] = getShared().getCzero();
+                    result = getShared().getCzero();
                 }
-                response.setResponse(objects);
-                return response;
+                return result;
+            }
+        });
+        redisCommandTable.put(new SDS("get"), new RedisCommand(new SDS("GET"),1) {
+            @Override
+            public RedisObject process(RedisClient client) {
+                int db = client.getDictId();
+                RedisObject result = null;
+                DictEntry<RedisObject,RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
+                if (entry != null) {
+                    result = entry.getValue();
+                } else {
+                    result = shared.getNokeyerr();
+                }
+
+                return result;
             }
         });
     }

@@ -1,7 +1,7 @@
 package com.jllsq.common.map;
 
 
-public class DictEntry<U,T> {
+public class DictEntry<U,T> implements Cloneable {
 
     private U key;
     private T value;
@@ -42,5 +42,11 @@ public class DictEntry<U,T> {
 
     public void setNext(DictEntry<U, T> next) {
         this.next = next;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        DictEntry<U,T> dictEntry = new DictEntry(this.getKey(),this.getValue(),this.next);
+        return dictEntry;
     }
 }

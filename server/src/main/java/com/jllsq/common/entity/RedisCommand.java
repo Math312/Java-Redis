@@ -14,5 +14,5 @@ public abstract class RedisCommand {
         this.arity = arity;
     }
 
-    public abstract RedisCommandResponse process(RedisClient client);
+    public abstract RedisObject process(RedisClient client);
 }

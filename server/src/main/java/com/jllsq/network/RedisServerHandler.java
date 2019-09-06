@@ -26,20 +26,9 @@ public class RedisServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext context, Object message){
         RedisClient client = (RedisClient) message;
-        RedisCommand command = redisServer.getRedisCommandTable().get(client.getArgv()[0]);
-        RedisCommandResponse response = command.process(client);
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0;i < response.getResponse().length;i ++) {
-            RedisObject redisObject = response.getResponse()[i];
-            if (redisObject.getType() == RedisObject.REDIS_STRING) {
-                context.write(Unpooled.copiedBuffer(((SDS)redisObject.getPtr()).getBytes()));
-            }
-        }
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER)
+        RedisCommand command = redisServer.getRedisCommandTable().get(client.getArgv()[0].getPtr());
+        RedisObject response = command.process(client);
+        context.writeAndFlush(response)
                 .addListener(ChannelFutureListener.CLOSE);
     }
 
