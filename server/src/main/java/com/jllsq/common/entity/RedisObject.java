@@ -3,7 +3,7 @@ package com.jllsq.common.entity;
 import lombok.Data;
 
 @Data
-public class RedisObject {
+public class RedisObject implements Cloneable,Comparable {
 
     public static final byte REDIS_ENCODING_RAW = 0;
     public static final byte REDIS_ENCODING_INT = 1;
@@ -29,5 +29,15 @@ public class RedisObject {
         this.ptr = ptr;
         this.encoding = REDIS_ENCODING_RAW;
         this.refCount = 1;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        return 0;
     }
 }

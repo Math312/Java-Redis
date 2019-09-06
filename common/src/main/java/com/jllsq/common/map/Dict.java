@@ -1,7 +1,9 @@
 package com.jllsq.common.map;
+import com.jllsq.common.RedisClonable;
+
 import java.util.Iterator;
 
-public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
+public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<DictEntry<U,T>>{
     private DictEntry<U,T>[] table;
     private DictType<U,T> type;
     private int size;
@@ -68,6 +70,9 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
         if (this.size == Integer.MAX_VALUE) {
             return false;
         }
+        if (find(key) != null){
+            return false;
+        }
         expandIfNecessary();
         int hash = hashFunction(key) & sizeMask;
         DictEntry<U,T> entry = table[hash];
@@ -116,7 +121,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
     }
 
     public DictEntry<U, T> find(U key) {
-        int hash = hashFunction(key);
+        int hash = hashFunction(key) & sizeMask;
         DictEntry<U,T> entry = table[hash];
         while (entry != null) {
             if (this.type.keyCompare(key,entry.getKey()) == 0){
@@ -149,7 +154,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
 
 
 
-    public class DictEntryIterator<U,T> implements Iterator<DictEntry<U,T>> {
+    public class DictEntryIterator<U extends RedisClonable & Comparable,T> implements Iterator<DictEntry<U,T>> {
 
         private int index = -1;
         private int walked = 0;

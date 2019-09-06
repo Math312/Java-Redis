@@ -1,8 +1,9 @@
 package com.jllsq.common.map;
 
+import com.jllsq.common.RedisClonable;
 import com.jllsq.common.sds.SDS;
 
-public interface DictType<U, T> {
+public interface DictType<U extends RedisClonable & Comparable, T> {
 
      default int hashFunction(U key) {
          byte[] buf = null;
@@ -18,11 +19,15 @@ public interface DictType<U, T> {
          return hash;
      }
 
-    U keyDup(U key);
+    default U keyDup(U key) {
+         return (U)key.cloneDeep();
+    }
 
     T valueDup(T value);
 
-    int keyCompare(U key1, U key2);
+    default int keyCompare(U key1, U key2) {
+         return key1.compareTo(key2);
+    }
 
     void keyDestructor(U key);
 

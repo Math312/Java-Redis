@@ -1,10 +1,11 @@
 package com.jllsq.common.sds;
 
+import com.jllsq.common.RedisClonable;
 import com.jllsq.common.sds.exception.SDSMaxLengthException;
 
 import java.io.UnsupportedEncodingException;
 
-public class SDS{
+public class SDS implements RedisClonable,Comparable<SDS> {
 
     public static int INIT_SIZE = 1024;
     public static int EXPAND_SPLIT = 1024 * 1024;
@@ -169,5 +170,44 @@ public class SDS{
     @Override
     public int hashCode() {
         return getContent().hashCode();
+    }
+
+    @Override
+    public Object cloneDeep() {
+        SDS sds = new SDS();
+        sds.length = this.length;
+        sds.used = this.used;
+        sds.content = new byte[sds.length];
+        for (int i = 0;i < sds.length;i ++) {
+            sds.content[i] = this.content[i];
+        }
+        return sds;
+    }
+
+    @Override
+    public int compareTo(SDS sds) {
+        if (sds == null) {
+            return -1;
+        }
+        if (sds.content == null) {
+            return -1;
+        }
+        if (sds.used > this.used) {
+            return -1;
+        } else if (sds.used < this.used){
+            return 1;
+        }
+        if (sds.used == this.used) {
+            for (int i = 0;i < this.used;i ++) {
+                if (sds.content[i] != this.content[i]) {
+                    if (this.content[i] > sds.content[i]) {
+                        return 1;
+                    } else {
+                        return -1;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 }

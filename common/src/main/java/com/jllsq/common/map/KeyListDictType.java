@@ -1,19 +1,13 @@
 package com.jllsq.common.map;
 
-public class KeyListDictType<U,T> implements DictType<U,T> {
-    @Override
-    public U keyDup(U key) {
-        return null;
-    }
+import com.jllsq.common.RedisClonable;
+import com.jllsq.common.sds.SDS;
+
+public class KeyListDictType<U extends SDS,T extends RedisClonable> implements DictType<U,T> {
 
     @Override
     public T valueDup(T value) {
-        return null;
-    }
-
-    @Override
-    public int keyCompare(U key1, U key2) {
-        return 0;
+        return (T)value.cloneDeep();
     }
 
     @Override
