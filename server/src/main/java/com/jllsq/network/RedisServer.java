@@ -205,6 +205,13 @@ public class RedisServer {
 
     private void initCommand() {
         redisCommandTable = new HashMap<>();
+        redisCommandTable.put(new SDS("COMMAND"), new RedisCommand(new SDS("COMMAND"),1) {
+            @Override
+            public RedisObject process(RedisClient client) {
+                RedisObject result = shared.getOk();
+                return result;
+            }
+        });
         redisCommandTable.put(new SDS("set"), new RedisCommand(new SDS("SET"),1) {
             @Override
             public RedisObject process(RedisClient client) {
@@ -231,6 +238,44 @@ public class RedisServer {
                 }
 
                 return result;
+            }
+        });
+
+        redisCommandTable.put(new SDS("exists"), new RedisCommand(new SDS("EXISTS"), 1) {
+            @Override
+            public RedisObject process(RedisClient client) {
+                int db = client.getDictId();
+                RedisObject result = null;
+                DictEntry<RedisObject,RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
+                if (entry != null) {
+                    result = shared.getCone();
+                } else {
+                    result = shared.getCzero();
+                }
+                return result;
+            }
+        });
+
+        redisCommandTable.put(new SDS("append"), new RedisCommand(new SDS("APPEND"), 1) {
+            @Override
+            public RedisObject process(RedisClient client) {
+                int db = client.getDictId();
+                RedisObject result = null;
+                DictEntry<RedisObject,RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
+                if (entry == null) {
+                    boolean addResult = getDb()[db].getDict().add(client.getArgv()[1],client.getArgv()[2]);
+                    if (addResult) {
+
+                    }
+                } else {
+                    RedisObject value = entry.getValue();
+                    if (value.getType() != REDIS_STRING) {
+                        return shared.getWrongtypeerr();
+                    } else {
+
+                    }
+                }
+                return null;
             }
         });
     }
