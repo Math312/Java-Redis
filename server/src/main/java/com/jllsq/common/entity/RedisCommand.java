@@ -1,25 +1,18 @@
 package com.jllsq.common.entity;
 
 import com.jllsq.common.sds.SDS;
+import lombok.Data;
 
-public class RedisCommand {
+@Data
+public abstract class RedisCommand {
 
-    private int argc;
-    private SDS[] argv;
+    private SDS name;
+    private int arity;
 
-    public int getArgc() {
-        return argc;
+    public RedisCommand(SDS name,int arity) {
+        this.name = name;
+        this.arity = arity;
     }
 
-    public void setArgc(int argc) {
-        this.argc = argc;
-    }
-
-    public SDS[] getArgv() {
-        return argv;
-    }
-
-    public void setArgv(SDS[] argv) {
-        this.argv = argv;
-    }
+    public abstract RedisCommandResponse process(RedisClient client);
 }

@@ -1,7 +1,9 @@
 package com.jllsq.common.map;
+import com.jllsq.common.RedisClonable;
+
 import java.util.Iterator;
 
-public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
+public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<DictEntry<U,T>>{
     private DictEntry<U,T>[] table;
     private DictType<U,T> type;
     private int size;
@@ -27,14 +29,24 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
     }
 
     public Dict expand(int size) {
-        this.table = new DictEntry[size];
-        this.sizeMask = this.size - 1;
+        DictEntry[] temp = new DictEntry[size];
+        int sizeMask = size - 1;
         Iterator<DictEntry<U,T>> iterator = this.iterator();
         int hash;
         while (iterator.hasNext()){
             DictEntry<U,T> dictEntry = iterator.next();
-            this.add(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()));
+            int hash2 = hashFunction(this.type.keyDup(dictEntry.getKey())) & sizeMask;
+            if (temp[hash2] == null) {
+                temp[hash2] = new DictEntry(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()));
+            } else {
+                DictEntry<U,T> tempEntry = temp[hash2];
+                DictEntry newEntry = new DictEntry(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()),tempEntry);
+                temp[hash2] = newEntry;
+            }
         }
+        this.table = temp;
+        this.sizeMask = sizeMask;
+        this.size = size;
         return this;
     }
 
@@ -56,6 +68,9 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
 
     public boolean add(U key, T value) {
         if (this.size == Integer.MAX_VALUE) {
+            return false;
+        }
+        if (find(key) != null){
             return false;
         }
         expandIfNecessary();
@@ -106,7 +121,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
     }
 
     public DictEntry<U, T> find(U key) {
-        int hash = hashFunction(key);
+        int hash = hashFunction(key) & sizeMask;
         DictEntry<U,T> entry = table[hash];
         while (entry != null) {
             if (this.type.keyCompare(key,entry.getKey()) == 0){
@@ -139,7 +154,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
 
 
 
-    public class DictEntryIterator<U,T> implements Iterator<DictEntry<U,T>> {
+    public class DictEntryIterator<U extends RedisClonable & Comparable,T> implements Iterator<DictEntry<U,T>> {
 
         private int index = -1;
         private int walked = 0;
@@ -160,6 +175,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
             if (entry == null) {
                 label = 1;
             }
+
             while(entry == null) {
                 index ++;
                 entry = this.dict.table[index];
@@ -171,6 +187,14 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
             }
             return entry;
         }
+    }
+
+    public int dictGenHashFunction(byte[] buf) {
+        int hash = 5381;
+        for (int i = 0;i < buf.length;i ++) {
+            hash = ((hash << 5) + hash) + buf[i];
+        }
+        return hash;
     }
 
 }
