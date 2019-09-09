@@ -71,6 +71,14 @@ public class SDS implements RedisClonable, Comparable<SDS> {
         }
     }
 
+    public SDS append(SDS sds) throws SDSMaxLengthException {
+        int newUsed = this.used + sds.used;
+        expandIfNecessary(newUsed);
+        System.arraycopy(sds.content,0,this.content,this.used,sds.used);
+        this.used = newUsed;
+        return this;
+    }
+
     public String setContent(String str) {
         try {
             byte[] content = str.getBytes("utf-8");
@@ -124,14 +132,6 @@ public class SDS implements RedisClonable, Comparable<SDS> {
         str = str.toUpperCase();
         byte[] bytes = str.getBytes();
         System.arraycopy(bytes, 0, this.content, 0, bytes.length);
-    }
-
-    public boolean append(SDS data) throws SDSMaxLengthException {
-        int used = data.getUsed();
-        expandIfNecessary(used + this.used);
-        System.arraycopy(data.getBytes(), 0, content, this.used, used);
-        this.used = this.used + used;
-        return true;
     }
 
     public int getLength() {

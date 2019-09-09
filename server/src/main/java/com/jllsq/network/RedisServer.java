@@ -4,6 +4,7 @@ import com.jllsq.common.entity.*;
 import com.jllsq.common.map.Dict;
 import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
+import com.jllsq.common.sds.exception.SDSMaxLengthException;
 import com.jllsq.config.Shared;
 import com.jllsq.decoder.RedisObjectDecoder;
 import com.jllsq.decoder.RedisObjectEncoder;
@@ -16,6 +17,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import com.jllsq.common.list.List;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -25,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import static com.jllsq.common.entity.RedisObject.REDIS_STRING;
 
@@ -120,8 +123,15 @@ public class RedisServer {
             loadServerConfig(this.configFileName);
         }
         initServer();
-        NioEventLoopGroup group = new NioEventLoopGroup();
+        NioEventLoopGroup group = new NioEventLoopGroup(2);
         try {
+            group.scheduleAtFixedRate(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.println(Thread.currentThread().getName()+"Run every 60 seconds");
+                        }
+                    }, 0, 1, TimeUnit.SECONDS);
             this.b = new ServerBootstrap();
             b.group(group)
                     .channel(NioServerSocketChannel.class)
@@ -265,17 +275,24 @@ public class RedisServer {
                 if (entry == null) {
                     boolean addResult = getDb()[db].getDict().add(client.getArgv()[1],client.getArgv()[2]);
                     if (addResult) {
-
+                        return getDb()[db].getDict().find(client.getArgv()[1]).getValue();
+                    } else {
+                        return shared.getCzero();
                     }
                 } else {
                     RedisObject value = entry.getValue();
                     if (value.getType() != REDIS_STRING) {
                         return shared.getWrongtypeerr();
                     } else {
-
+                        try {
+                            value.setPtr(((SDS)(entry.getValue().getPtr())).append(((SDS)(client.getArgv()[2].getPtr()))));
+                        } catch (SDSMaxLengthException e) {
+                            e.printStackTrace();
+                            return shared.getErr();
+                        }
+                        return entry.getValue();
                     }
                 }
-                return null;
             }
         });
     }

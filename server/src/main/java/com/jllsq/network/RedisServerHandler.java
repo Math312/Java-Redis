@@ -5,6 +5,7 @@ import com.jllsq.common.entity.RedisCommand;
 import com.jllsq.common.entity.RedisCommandResponse;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
+import com.jllsq.config.Shared;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -12,6 +13,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
+
+import java.util.concurrent.TimeUnit;
 
 @ChannelHandler.Sharable
 public class RedisServerHandler extends ChannelInboundHandlerAdapter {
@@ -27,7 +30,12 @@ public class RedisServerHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext context, Object message){
         RedisClient client = (RedisClient) message;
         RedisCommand command = redisServer.getRedisCommandTable().get(client.getArgv()[0].getPtr());
-        RedisObject response = command.process(client);
+        RedisObject response = null;
+        if (command != null) {
+            response = command.process(client);
+        } else {
+            response = Shared.getInstance().getSyntaxerr();
+        }
         context.writeAndFlush(response)
                 .addListener(ChannelFutureListener.CLOSE);
     }

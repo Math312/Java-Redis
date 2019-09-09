@@ -18,6 +18,8 @@ public class RedisObjectDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        System.out.println(Thread.currentThread().getName());
+
         if (in.isReadable()){
             RedisClient client = new RedisClient();
             if (in.readByte() != '*') {

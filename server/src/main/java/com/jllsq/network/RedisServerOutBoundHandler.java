@@ -8,7 +8,6 @@ public class RedisServerOutBoundHandler extends ChannelOutboundHandlerAdapter {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        System.out.println(msg);
         super.write(ctx, msg, promise);
     }
 }
