@@ -1,5 +1,6 @@
 package com.jllsq.common.map;
 import java.util.Iterator;
+import java.util.Random;
 
 public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
     private DictEntry<U,T>[] table;
@@ -182,6 +183,30 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
             }
             return entry;
         }
+    }
+
+    public DictEntry<U,T> dictGetRandomKey() {
+        DictEntry<U,T> result = null;
+        if (this.used == 0) {
+            return null;
+        }
+        int randomIndex = 0;
+        Random random = new Random();
+        do {
+            randomIndex = random.nextInt(this.size);
+            result = table[randomIndex];
+        } while (result == null);
+        int length = 0;
+        while (result != null){
+            result = result.getNext();
+            length ++;
+        }
+        result =table[randomIndex];
+        randomIndex = random.nextInt(length);
+        while (randomIndex > 0){
+            result = result.getNext();
+        }
+        return result;
     }
 
 //    public int dictGenHashFunction(byte[] buf) {

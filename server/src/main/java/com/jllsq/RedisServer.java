@@ -2,6 +2,7 @@ package com.jllsq;
 
 import com.jllsq.common.entity.*;
 import com.jllsq.common.map.Dict;
+import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
@@ -79,6 +80,8 @@ public class RedisServer {
     private static int APPENDFSYNC_ALWAYS = 1;
     private static int APPENDFSYNC_EVERYSEC = 2;
 
+    private static int REDIS_EXPIRELOOKUPS_PER_CRON = 100;
+
     private String configFileName;
 
     private int cronloops;
@@ -147,6 +150,32 @@ public class RedisServer {
                                 }
                             }
                         }
+
+                        for (int i = 0;i < db.length;i ++) {
+                            int expired = 0;
+                            Dict<RedisObject,RedisObject> expires = db[i].getExpires();
+                            do {
+                                int num = expires.getSize();
+                                long time = RedisServerStateHolder.getInstance().getUnixTimeLong();
+                                if (num > REDIS_EXPIRELOOKUPS_PER_CRON) {
+                                    num = REDIS_EXPIRELOOKUPS_PER_CRON;
+                                }
+                                while (num -- > 0) {
+                                    DictEntry<RedisObject,RedisObject> entry = expires.dictGetRandomKey();
+                                    if (entry == null){
+                                        break;
+                                    } else {
+                                        long expireTime = Long.parseLong(((SDS)(entry.getValue().getPtr())).getContent());
+                                        if (expireTime < time) {
+                                            db[i].getDict().delete(entry.getKey());
+                                            expires.delete(entry.getKey());
+                                            expired ++;
+                                        }
+                                    }
+                                }
+                            } while (expired > REDIS_EXPIRELOOKUPS_PER_CRON / 4);
+                        }
+
                     }, 0, 1, TimeUnit.SECONDS);
             this.b = new ServerBootstrap();
             b.group(group)
@@ -160,11 +189,11 @@ public class RedisServer {
                         }
                     });
 
-            ChannelFuture f = b.bind().sync();            //8
+            ChannelFuture f = b.bind().sync();
             RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE,RedisServer.class.getName() + " started and listen on " + f.channel().localAddress());
-            f.channel().closeFuture().sync();            //9
+            f.channel().closeFuture().sync();
         } finally {
-            group.shutdownGracefully().sync();            //10
+            group.shutdownGracefully().sync();
         }
     }
 
