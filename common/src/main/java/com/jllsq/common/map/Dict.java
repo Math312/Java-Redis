@@ -166,19 +166,18 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
 
         @Override
         public DictEntry<U, T> next() {
-            int label = 0;
-            if (entry == null) {
-                label = 1;
-            }
-
-            while(entry == null) {
-                index ++;
-                entry = this.dict.table[index];
-            }
-            walked ++;
-            if (label == 0) {
+            if (entry != null && entry.getNext() != null) {
                 entry = entry.getNext();
-                return entry;
+                walked ++;
+            }
+            else {
+                index ++;
+                if (this.dict.table[index] != null) {
+                    entry = this.dict.table[index];
+                    walked ++;
+                } else {
+                    entry = next();
+                }
             }
             return entry;
         }

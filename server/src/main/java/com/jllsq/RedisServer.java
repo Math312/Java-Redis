@@ -1,4 +1,4 @@
-package com.jllsq.network;
+package com.jllsq;
 
 import com.jllsq.common.entity.*;
 import com.jllsq.common.map.Dict;
@@ -6,8 +6,10 @@ import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.common.sds.exception.SDSMaxLengthException;
 import com.jllsq.config.Shared;
-import com.jllsq.decoder.RedisObjectDecoder;
-import com.jllsq.decoder.RedisObjectEncoder;
+import com.jllsq.handler.RedisServerHandler;
+import com.jllsq.handler.decoder.RedisObjectDecoder;
+import com.jllsq.handler.decoder.RedisObjectEncoder;
+import com.jllsq.log.RedisLog;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -17,7 +19,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import com.jllsq.common.list.List;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -77,10 +78,13 @@ public class RedisServer {
 
     private String configFileName;
 
+    private int cronloops;
+    private Date unixTime;
+
     private int port;
     private RedisDb[] db;
     private int dbNum;
-    private Dict<SDS,Object> sharingPool;
+    private Dict<SDS, Object> sharingPool;
     private long dirty;
     private List clients;
     private NioEventLoop nioEventLoop;
@@ -123,13 +127,27 @@ public class RedisServer {
             loadServerConfig(this.configFileName);
         }
         initServer();
-        NioEventLoopGroup group = new NioEventLoopGroup(2);
+        NioEventLoopGroup group = new NioEventLoopGroup(1);
         try {
             group.scheduleAtFixedRate(
                     new Runnable() {
                         @Override
                         public void run() {
-                            System.out.println(Thread.currentThread().getName()+"Run every 60 seconds");
+                            cronLoops++;
+                            unixTime = new Date();
+                            for (int i = 0; i < db.length; i++) {
+                                int size = db[i].getDict().getSize();
+                                int used = db[i].getDict().getUsed();
+                                int vkeys = db[i].getExpires().getUsed();
+
+                                if (cronLoops % 5 == 0 && (used > 0 || vkeys > 0)) {
+                                    try {
+                                        RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE,"DB %d: %d keys (%d volatile) in %d slots HT.", i, used, vkeys, size);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
                         }
                     }, 0, 1, TimeUnit.SECONDS);
             this.b = new ServerBootstrap();
@@ -141,12 +159,12 @@ public class RedisServer {
                         public void initChannel(SocketChannel ch)
                                 throws Exception {
                             ch.pipeline()
-                                    .addLast(new RedisObjectDecoder(),new RedisObjectEncoder(),new RedisServerHandler(RedisServer.this));
+                                    .addLast(new RedisObjectDecoder(), new RedisObjectEncoder(), new RedisServerHandler(RedisServer.this));
                         }
                     });
 
             ChannelFuture f = b.bind().sync();            //8
-            System.out.println(RedisServer.class.getName() + " started and listen on " + f.channel().localAddress());
+            RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE,RedisServer.class.getName() + " started and listen on " + f.channel().localAddress());
             f.channel().closeFuture().sync();            //9
         } finally {
             group.shutdownGracefully().sync();            //10
@@ -163,71 +181,79 @@ public class RedisServer {
         createShareObjects();
         initCommand();
         this.db = new RedisDb[this.dbNum];
-        for (int i = 0;i < this.dbNum;i ++) {
+        for (int i = 0; i < this.dbNum; i++) {
             this.db[i] = new RedisDb(i);
         }
         this.cronLoops = 0;
+        this.logFile = new SDS("redis.log");
+        if (logFile != null) {
+            try {
+                RedisLog.getInstance().init(logFile.getContent());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
-    private RedisObject createObject(boolean isShared,byte type, Object ptr) {
+    private RedisObject createObject(boolean isShared, byte type, Object ptr) {
         RedisObject redisObject = null;
-        if (this.objFreeList.length() > 0){
+        if (this.objFreeList.length() > 0) {
             // Get the first node.
             // Change the data of the node.
             // Remove the node from objFreeList.
         } else {
-            redisObject = new RedisObject(isShared,type,ptr);
+            redisObject = new RedisObject(isShared, type, ptr);
         }
         return redisObject;
     }
 
     private void createShareObjects() {
         this.shared = Shared.getInstance();
-        this.shared.setCrlf(createObject(true,REDIS_STRING,new SDS("\r\n")));
-        this.shared.setOk(createObject(true,REDIS_STRING,new SDS("+OK\r\n")));
-        this.shared.setErr(createObject(true,REDIS_STRING,new SDS("-ERR\r\n")));
-        this.shared.setEmptybulk(createObject(true,REDIS_STRING,new SDS("$0\r\n\r\n")));
-        this.shared.setCzero(createObject(true,REDIS_STRING,new SDS(":0\r\n")));
-        this.shared.setCone(createObject(true,REDIS_STRING,new SDS(":1\r\n")));
-        this.shared.setNullbulk(createObject(true,REDIS_STRING,new SDS("$-1\r\n")));
-        this.shared.setNullmultibulk(createObject(true,REDIS_STRING,new SDS("*-1\r\n")));
-        this.shared.setEmptymultibulk(createObject(true,REDIS_STRING,new SDS("*0\r\n")));
-        this.shared.setPong(createObject(true,REDIS_STRING,new SDS("+PONG\r\n")));
-        this.shared.setQueued(createObject(true,REDIS_STRING,new SDS("+QUEUED\r\n")));
-        this.shared.setWrongtypeerr(createObject(true,REDIS_STRING,new SDS("-ERR Operation against a key holding the wrong kind of value\r\n")));
-        this.shared.setNokeyerr(createObject(true,REDIS_STRING,new SDS("-ERR no such key\r\n")));
-        this.shared.setSyntaxerr(createObject(true,REDIS_STRING,new SDS("-ERR syntax error\r\n")));
-        this.shared.setOutofrangeerr(createObject(true,REDIS_STRING,new SDS("-ERR source and destination objects are the same\r\n")));
-        this.shared.setSpace(createObject(true,REDIS_STRING,new SDS(" ")));
-        this.shared.setColon(createObject(true,REDIS_STRING,new SDS(":")));
-        this.shared.setPlus(createObject(true,REDIS_STRING,new SDS("+")));
-        this.shared.setSelect0(createObject(true,REDIS_STRING,new SDS("select 0\r\n")));
-        this.shared.setSelect1(createObject(true,REDIS_STRING,new SDS("select 1\r\n")));
-        this.shared.setSelect2(createObject(true,REDIS_STRING,new SDS("select 2\r\n")));
-        this.shared.setSelect3(createObject(true,REDIS_STRING,new SDS("select 3\r\n")));
-        this.shared.setSelect4(createObject(true,REDIS_STRING,new SDS("select 4\r\n")));
-        this.shared.setSelect5(createObject(true,REDIS_STRING,new SDS("select 5\r\n")));
-        this.shared.setSelect6(createObject(true,REDIS_STRING,new SDS("select 6\r\n")));
-        this.shared.setSelect7(createObject(true,REDIS_STRING,new SDS("select 7\r\n")));
-        this.shared.setSelect8(createObject(true,REDIS_STRING,new SDS("select 8\r\n")));
-        this.shared.setSelect9(createObject(true,REDIS_STRING,new SDS("select 9\r\n")));
+        this.shared.setCrlf(createObject(true, REDIS_STRING, new SDS("\r\n")));
+        this.shared.setOk(createObject(true, REDIS_STRING, new SDS("+OK\r\n")));
+        this.shared.setErr(createObject(true, REDIS_STRING, new SDS("-ERR\r\n")));
+        this.shared.setEmptybulk(createObject(true, REDIS_STRING, new SDS("$0\r\n\r\n")));
+        this.shared.setCzero(createObject(true, REDIS_STRING, new SDS(":0\r\n")));
+        this.shared.setCone(createObject(true, REDIS_STRING, new SDS(":1\r\n")));
+        this.shared.setNullbulk(createObject(true, REDIS_STRING, new SDS("$-1\r\n")));
+        this.shared.setNullmultibulk(createObject(true, REDIS_STRING, new SDS("*-1\r\n")));
+        this.shared.setEmptymultibulk(createObject(true, REDIS_STRING, new SDS("*0\r\n")));
+        this.shared.setPong(createObject(true, REDIS_STRING, new SDS("+PONG\r\n")));
+        this.shared.setQueued(createObject(true, REDIS_STRING, new SDS("+QUEUED\r\n")));
+        this.shared.setWrongtypeerr(createObject(true, REDIS_STRING, new SDS("-ERR Operation against a key holding the wrong kind of value\r\n")));
+        this.shared.setNokeyerr(createObject(true, REDIS_STRING, new SDS("-ERR no such key\r\n")));
+        this.shared.setSyntaxerr(createObject(true, REDIS_STRING, new SDS("-ERR syntax error\r\n")));
+        this.shared.setOutofrangeerr(createObject(true, REDIS_STRING, new SDS("-ERR source and destination objects are the same\r\n")));
+        this.shared.setSpace(createObject(true, REDIS_STRING, new SDS(" ")));
+        this.shared.setColon(createObject(true, REDIS_STRING, new SDS(":")));
+        this.shared.setPlus(createObject(true, REDIS_STRING, new SDS("+")));
+        this.shared.setSelect0(createObject(true, REDIS_STRING, new SDS("select 0\r\n")));
+        this.shared.setSelect1(createObject(true, REDIS_STRING, new SDS("select 1\r\n")));
+        this.shared.setSelect2(createObject(true, REDIS_STRING, new SDS("select 2\r\n")));
+        this.shared.setSelect3(createObject(true, REDIS_STRING, new SDS("select 3\r\n")));
+        this.shared.setSelect4(createObject(true, REDIS_STRING, new SDS("select 4\r\n")));
+        this.shared.setSelect5(createObject(true, REDIS_STRING, new SDS("select 5\r\n")));
+        this.shared.setSelect6(createObject(true, REDIS_STRING, new SDS("select 6\r\n")));
+        this.shared.setSelect7(createObject(true, REDIS_STRING, new SDS("select 7\r\n")));
+        this.shared.setSelect8(createObject(true, REDIS_STRING, new SDS("select 8\r\n")));
+        this.shared.setSelect9(createObject(true, REDIS_STRING, new SDS("select 9\r\n")));
     }
 
     private void initCommand() {
         redisCommandTable = new HashMap<>();
-        redisCommandTable.put(new SDS("COMMAND"), new RedisCommand(new SDS("COMMAND"),1) {
+        redisCommandTable.put(new SDS("COMMAND"), new RedisCommand(new SDS("COMMAND"), 1) {
             @Override
             public RedisObject process(RedisClient client) {
                 RedisObject result = shared.getOk();
                 return result;
             }
         });
-        redisCommandTable.put(new SDS("set"), new RedisCommand(new SDS("SET"),1) {
+        redisCommandTable.put(new SDS("set"), new RedisCommand(new SDS("SET"), 1) {
             @Override
             public RedisObject process(RedisClient client) {
                 int db = client.getDictId();
                 RedisObject result = null;
-                if (getDb()[db].getDict().add(client.getArgv()[1],client.getArgv()[2])) {
+                if (getDb()[db].getDict().add(client.getArgv()[1], client.getArgv()[2])) {
                     result = getShared().getCone();
                 } else {
                     result = getShared().getCzero();
@@ -235,12 +261,12 @@ public class RedisServer {
                 return result;
             }
         });
-        redisCommandTable.put(new SDS("get"), new RedisCommand(new SDS("GET"),1) {
+        redisCommandTable.put(new SDS("get"), new RedisCommand(new SDS("GET"), 1) {
             @Override
             public RedisObject process(RedisClient client) {
                 int db = client.getDictId();
                 RedisObject result = null;
-                DictEntry<RedisObject,RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
+                DictEntry<RedisObject, RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
                 if (entry != null) {
                     result = entry.getValue();
                 } else {
@@ -256,7 +282,7 @@ public class RedisServer {
             public RedisObject process(RedisClient client) {
                 int db = client.getDictId();
                 RedisObject result = null;
-                DictEntry<RedisObject,RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
+                DictEntry<RedisObject, RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
                 if (entry != null) {
                     result = shared.getCone();
                 } else {
@@ -271,9 +297,9 @@ public class RedisServer {
             public RedisObject process(RedisClient client) {
                 int db = client.getDictId();
                 RedisObject result = null;
-                DictEntry<RedisObject,RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
+                DictEntry<RedisObject, RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
                 if (entry == null) {
-                    boolean addResult = getDb()[db].getDict().add(client.getArgv()[1],client.getArgv()[2]);
+                    boolean addResult = getDb()[db].getDict().add(client.getArgv()[1], client.getArgv()[2]);
                     if (addResult) {
                         return getDb()[db].getDict().find(client.getArgv()[1]).getValue();
                     } else {
@@ -285,7 +311,7 @@ public class RedisServer {
                         return shared.getWrongtypeerr();
                     } else {
                         try {
-                            value.setPtr(((SDS)(entry.getValue().getPtr())).append(((SDS)(client.getArgv()[2].getPtr()))));
+                            value.setPtr(((SDS) (entry.getValue().getPtr())).append(((SDS) (client.getArgv()[2].getPtr()))));
                         } catch (SDSMaxLengthException e) {
                             e.printStackTrace();
                             return shared.getErr();
@@ -299,52 +325,43 @@ public class RedisServer {
 
     private void loadServerConfig(String configFileName) {
         Path path = Paths.get(configFileName);
-        if (Files.isReadable(path)){
+        if (Files.isReadable(path)) {
             try {
                 java.util.List<String> list = Files.readAllLines(path);
-                for (String line : list){
-                    if (line.startsWith("#") || line.length() == 0){
+                for (String line : list) {
+                    if (line.startsWith("#") || line.length() == 0) {
                         continue;
                     }
-                    String[] config = line.split( " ");
+                    String[] config = line.split(" ");
                     if (config[0].equals(TIME_OUT) && config.length == 2) {
                         this.maxIdleTime = Integer.parseInt(config[1]);
-                    }
-                    else if (config[0].equals(PORT) && config.length == 2) {
+                    } else if (config[0].equals(PORT) && config.length == 2) {
                         this.port = Integer.parseInt(config[1]);
                         if (this.port < 1 || this.port > 65535) {
                             throw new RuntimeException();
                         }
-                    }
-                    else if (config[0].equals(BIND) && config.length == 2) {
+                    } else if (config[0].equals(BIND) && config.length == 2) {
                         this.bindAddr = new SDS(config[1]);
-                    }
-                    else if (config[0].equals(SAVE) && config.length == 3) {
+                    } else if (config[0].equals(SAVE) && config.length == 3) {
                         long seconds = Long.parseLong(config[1]);
                         long changes = Long.parseLong(config[2]);
                         if (seconds < 1 || changes > 0) {
                             throw new RuntimeException();
                         }
-                        appendServerSaveParams(seconds,changes);
-                    }
-                    else if (config[0].equals(LOG_LEVEL) && config.length == 2) {
+                        appendServerSaveParams(seconds, changes);
+                    } else if (config[0].equals(LOG_LEVEL) && config.length == 2) {
                         if (config[1].equals(LOG_LEVEL_DEBUG_STR)) {
                             this.verbosity = LOG_LEVEL_DEBUG;
-                        }
-                        else if (config[1].equals(LOG_LEVEL_NOTICE_STR)) {
+                        } else if (config[1].equals(LOG_LEVEL_NOTICE_STR)) {
                             this.verbosity = LOG_LEVEL_NOTICE;
-                        }
-                        else if (config[1].equals(LOG_LEVEL_WARNING_STR)) {
+                        } else if (config[1].equals(LOG_LEVEL_WARNING_STR)) {
                             this.verbosity = LOG_LEVEL_WARNING;
-                        }
-                        else if (config[1].equals(LOG_LEVEL_VERBOSE_STR)) {
+                        } else if (config[1].equals(LOG_LEVEL_VERBOSE_STR)) {
                             this.verbosity = LOG_LEVEL_VERBOSE;
-                        }
-                        else {
+                        } else {
                             throw new RuntimeException();
                         }
-                    }
-                    else if (config[0].equals(LOG_FILE) && config.length == 2) {
+                    } else if (config[0].equals(LOG_FILE) && config.length == 2) {
                         if (config[1].equals(STDOUT)) {
                             this.logFile = null;
                         } else {
@@ -352,71 +369,58 @@ public class RedisServer {
                             FileOutputStream fileOutputStream = new FileOutputStream(file);
                             fileOutputStream.close();
                         }
-                    }
-                    else if (config[0].equals(DATABASES) && config.length == 2) {
+                    } else if (config[0].equals(DATABASES) && config.length == 2) {
                         this.dbNum = Integer.parseInt(config[1]);
                         if (this.dbNum < 1) {
                             throw new RuntimeException();
                         }
-                    }
-                    else if (config[0].equals(MAX_CLIENTS) && config.length == 2) {
+                    } else if (config[0].equals(MAX_CLIENTS) && config.length == 2) {
                         this.maxClients = Integer.parseInt(config[1]);
-                    }
-                    else if (config[0].equals(MAX_MEMORY) && config.length == 2 ) {
+                    } else if (config[0].equals(MAX_MEMORY) && config.length == 2) {
                         this.maxMemory = Long.parseLong(config[1]);
-                    }
-                    else if (config[0].equals(GLUE_OUTPUT_BUF) && config.length == 2) {
+                    } else if (config[0].equals(GLUE_OUTPUT_BUF) && config.length == 2) {
                         if (config[1].equals("yes")) {
                             this.glueOutputBuf = 1;
-                        }else if (config[1].equals("no")) {
+                        } else if (config[1].equals("no")) {
                             this.glueOutputBuf = 0;
                         }
-                    }
-                    else if (config[0].equals(SHARE_OBJECTS) && config.length == 2) {
+                    } else if (config[0].equals(SHARE_OBJECTS) && config.length == 2) {
                         this.shareObjects = Integer.parseInt(config[1]);
-                    }
-                    else if (config[0].equals(RDB_COMPRESSION) && config.length == 2) {
+                    } else if (config[0].equals(RDB_COMPRESSION) && config.length == 2) {
                         if (config[1].equals("yes")) {
                             this.rdbCompression = 1;
-                        }else if (config[1].equals("no")) {
+                        } else if (config[1].equals("no")) {
                             this.rdbCompression = 0;
                         }
-                    }
-                    else if (config[0].equals(SHARE_OBJECTS_POOL_SIZE) && config.length == 2) {
+                    } else if (config[0].equals(SHARE_OBJECTS_POOL_SIZE) && config.length == 2) {
 
-                    }
-                    else if (config[0].equals(DAEMONIZE) && config.length == 2) {
+                    } else if (config[0].equals(DAEMONIZE) && config.length == 2) {
                         if (config[1].equals("yes")) {
                             this.daemonize = 1;
-                        }else if (config[1].equals("no")) {
+                        } else if (config[1].equals("no")) {
                             this.daemonize = 0;
                         }
-                    }
-                    else if (config[0].equals(APPEND_ONLY) && config.length == 2) {
+                    } else if (config[0].equals(APPEND_ONLY) && config.length == 2) {
                         if (config[1].equals("yes")) {
                             this.appendOnly = 1;
-                        }else if (config[1].equals("no")) {
+                        } else if (config[1].equals("no")) {
                             this.appendOnly = 0;
                         }
-                    }
-                    else if (config[0].equals(APPEND_FSYNC) && config.length == 2) {
+                    } else if (config[0].equals(APPEND_FSYNC) && config.length == 2) {
                         if (config[1].equals("no")) {
                             this.appendFsync = APPENDFSYNC_NO;
-                        }else if (config[1].equals("always")) {
+                        } else if (config[1].equals("always")) {
                             this.appendFsync = APPENDFSYNC_ALWAYS;
-                        }else if (config[1].equals("everysec")) {
+                        } else if (config[1].equals("everysec")) {
                             this.appendFsync = APPENDFSYNC_EVERYSEC;
                         }
-                    }
-                    else if (config[0].equals(REQUIRE_PASS) && config.length == 2) {
+                    } else if (config[0].equals(REQUIRE_PASS) && config.length == 2) {
                         this.requirePass = new SDS(config[1]);
-                    }
-                    else if (config[0].equals(PID_FILE) && config.length == 2) {
+                    } else if (config[0].equals(PID_FILE) && config.length == 2) {
                         this.pidFile = new SDS(config[1]);
-                    }
-                    else if (config[0].equals(DB_FILE_NAME) && config.length == 2) {
+                    } else if (config[0].equals(DB_FILE_NAME) && config.length == 2) {
                         this.dbFilename = new SDS(config[1]);
-                    }else {
+                    } else {
                         throw new RuntimeException();
                     }
                 }
@@ -471,19 +475,19 @@ public class RedisServer {
 
     void appendDefaultServerSaveParams() {
         this.saveParams = new SaveParam[3];
-        this.saveParams[0] = new SaveParam(60*60, 1);
+        this.saveParams[0] = new SaveParam(60 * 60, 1);
         this.saveParams[1] = new SaveParam(300, 100);
         this.saveParams[2] = new SaveParam(60, 10000);
         this.saveParamLen = 3;
     }
 
     void appendServerSaveParams(long seconds, long changes) {
-        SaveParam newParam = new SaveParam(seconds,changes);
-        SaveParam[] temp = new SaveParam[this.saveParamLen+1];
-        System.arraycopy(this.saveParams,0,temp,0,this.saveParamLen);
+        SaveParam newParam = new SaveParam(seconds, changes);
+        SaveParam[] temp = new SaveParam[this.saveParamLen + 1];
+        System.arraycopy(this.saveParams, 0, temp, 0, this.saveParamLen);
         temp[this.saveParamLen] = newParam;
         this.saveParams = temp;
-        this.saveParamLen = this.saveParamLen+1;
+        this.saveParamLen = this.saveParamLen + 1;
     }
 
 }

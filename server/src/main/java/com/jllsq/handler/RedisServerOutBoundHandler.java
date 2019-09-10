@@ -1,4 +1,4 @@
-package com.jllsq.network;
+package com.jllsq.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;

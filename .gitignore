@@ -7,4 +7,4 @@
 *.iml
 ./settings
 application.pid
-logs/
+redis.log

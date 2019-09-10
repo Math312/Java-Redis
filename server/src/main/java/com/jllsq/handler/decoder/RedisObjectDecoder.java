@@ -1,15 +1,11 @@
-package com.jllsq.decoder;
+package com.jllsq.handler.decoder;
 
 import com.jllsq.common.entity.RedisClient;
-import com.jllsq.common.entity.RedisCommand;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
-import com.sun.security.ntlm.Client;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.util.CharsetUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -18,8 +14,6 @@ public class RedisObjectDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        System.out.println(Thread.currentThread().getName());
-
         if (in.isReadable()){
             RedisClient client = new RedisClient();
             if (in.readByte() != '*') {
