@@ -2,13 +2,10 @@ package com.jllsq;
 
 import com.jllsq.common.entity.*;
 import com.jllsq.common.map.Dict;
-import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
-import com.jllsq.common.sds.exception.SDSMaxLengthException;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
 import com.jllsq.handler.command.RedisCommand;
-import com.jllsq.handler.command.impl.*;
 import com.jllsq.handler.decoder.RedisObjectDecoder;
 import com.jllsq.handler.decoder.RedisObjectEncoder;
 import com.jllsq.holder.RedisServerStateHolder;
@@ -16,11 +13,11 @@ import com.jllsq.log.RedisLog;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import com.jllsq.common.list.List;
+import io.netty.util.concurrent.ScheduledFuture;
 import lombok.Data;
 
 import java.io.*;
@@ -35,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 
 import static com.jllsq.common.entity.RedisObject.REDIS_STRING;
 
+/**
+ * @author Math312
+ * */
 @Data
 public class RedisServer {
 
@@ -121,7 +121,7 @@ public class RedisServer {
     private long maxMemory;
     private Shared shared;
 
-    public void start() throws Exception {
+    private void start() throws Exception {
         initServerConfig();
         if (this.configFileName != null) {
             resetServerSaveParams();
@@ -130,24 +130,20 @@ public class RedisServer {
         initServer();
         NioEventLoopGroup group = new NioEventLoopGroup(1);
         try {
-            group.scheduleAtFixedRate(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            System.out.println(Thread.currentThread().getName());
-                            cronLoops++;
-                            RedisServerStateHolder.getInstance().updateUnixTime();
-                            for (int i = 0; i < db.length; i++) {
-                                int size = db[i].getDict().getSize();
-                                int used = db[i].getDict().getUsed();
-                                int vkeys = db[i].getExpires().getUsed();
+            ScheduledFuture<?> scheduledFuture = group.scheduleAtFixedRate(
+                    () -> {
+                        cronLoops++;
+                        RedisServerStateHolder.getInstance().updateUnixTime();
+                        for (int i = 0; i < db.length; i++) {
+                            int size = db[i].getDict().getSize();
+                            int used = db[i].getDict().getUsed();
+                            int vkeys = db[i].getExpires().getUsed();
 
-                                if (cronLoops % 5 == 0 && (used > 0 || vkeys > 0)) {
-                                    try {
-                                        RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE,"DB %d: %d keys (%d volatile) in %d slots HT.", i, used, vkeys, size);
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
+                            if (cronLoops % 5 == 0 && (used > 0 || vkeys > 0)) {
+                                try {
+                                    RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE, "DB %d: %d keys (%d volatile) in %d slots HT.", i, used, vkeys, size);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
                                 }
                             }
                         }
@@ -158,8 +154,7 @@ public class RedisServer {
                     .localAddress(new InetSocketAddress(this.port))
                     .childHandler(new ChannelInitializer<SocketChannel>() { //7
                         @Override
-                        public void initChannel(SocketChannel ch)
-                                throws Exception {
+                        public void initChannel(SocketChannel ch) {
                             ch.pipeline()
                                     .addLast(new RedisObjectDecoder(), new RedisObjectEncoder(), new RedisServerHandler(RedisServer.this));
                         }
@@ -181,13 +176,11 @@ public class RedisServer {
             e.printStackTrace();
         }
         createShareObjects();
-        initCommand();
         this.db = new RedisDb[this.dbNum];
         for (int i = 0; i < this.dbNum; i++) {
             this.db[i] = new RedisDb(i);
         }
         this.cronLoops = 0;
-        this.logFile = new SDS("redis.log");
         if (logFile != null) {
             try {
                 RedisLog.getInstance().init(logFile.getContent());
@@ -239,16 +232,6 @@ public class RedisServer {
         this.shared.setSelect7(createObject(true, REDIS_STRING, new SDS("select 7\r\n")));
         this.shared.setSelect8(createObject(true, REDIS_STRING, new SDS("select 8\r\n")));
         this.shared.setSelect9(createObject(true, REDIS_STRING, new SDS("select 9\r\n")));
-    }
-
-    private void initCommand() {
-        redisCommandTable = new HashMap<>();
-        redisCommandTable.put(new SDS("COMMAND"),new CommandCommand());
-        redisCommandTable.put(new SDS("set"),new SetCommand());
-        redisCommandTable.put(new SDS("get"), new GetCommand());
-        redisCommandTable.put(new SDS("exists"), new ExistsCommand());
-        redisCommandTable.put(new SDS("append"), new AppendCommand());
-        redisCommandTable.put(new SDS("expire"), new ExpireCommand());
     }
 
     private void loadServerConfig(String configFileName) {
@@ -307,7 +290,7 @@ public class RedisServer {
                     } else if (config[0].equals(MAX_MEMORY) && config.length == 2) {
                         this.maxMemory = Long.parseLong(config[1]);
                     } else if (config[0].equals(GLUE_OUTPUT_BUF) && config.length == 2) {
-                        if (config[1].equals("yes")) {
+                        if ("yes".equals(config[1])) {
                             this.glueOutputBuf = 1;
                         } else if (config[1].equals("no")) {
                             this.glueOutputBuf = 0;
@@ -387,21 +370,15 @@ public class RedisServer {
     }
 
     public static void main(String[] args) throws Exception {
-//        if (args.length != 1) {
-//            System.err.println(
-//                    "Usage: " + EchoServer.class.getSimpleName() +
-//                            " <port>");
-//            return;
-//        }
-        new RedisServer().start();                //2
+        new RedisServer().start();
     }
 
-    void resetServerSaveParams() {
+    private void resetServerSaveParams() {
         this.saveParams = new SaveParam[0];
         this.saveParamLen = 0;
     }
 
-    void appendDefaultServerSaveParams() {
+    private void appendDefaultServerSaveParams() {
         this.saveParams = new SaveParam[3];
         this.saveParams[0] = new SaveParam(60 * 60, 1);
         this.saveParams[1] = new SaveParam(300, 100);
@@ -409,7 +386,7 @@ public class RedisServer {
         this.saveParamLen = 3;
     }
 
-    void appendServerSaveParams(long seconds, long changes) {
+    private void appendServerSaveParams(long seconds, long changes) {
         SaveParam newParam = new SaveParam(seconds, changes);
         SaveParam[] temp = new SaveParam[this.saveParamLen + 1];
         System.arraycopy(this.saveParams, 0, temp, 0, this.saveParamLen);

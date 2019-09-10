@@ -25,7 +25,7 @@ public class ExpireCommand extends RedisCommand {
         } else {
             DictEntry<RedisObject, RedisObject> expireEntry = db.getExpires().find(client.getArgv()[1]);
             RedisObject object = client.getArgv()[2];
-            long expires = Long.parseLong(((SDS)(object.getPtr())).getContent()) + RedisServerStateHolder.getInstance().getUnixTimeLong();
+            long expires = Long.parseLong(((SDS)(object.getPtr())).getContent())*1000 + RedisServerStateHolder.getInstance().getUnixTimeLong();
             object.setPtr(new SDS(expires+""));
             if (expireEntry == null) {
                 db.getExpires().add(client.getArgv()[1],client.getArgv()[2]);

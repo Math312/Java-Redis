@@ -2,9 +2,11 @@ package com.jllsq.handler;
 
 import com.jllsq.RedisServer;
 import com.jllsq.common.entity.RedisClient;
+import com.jllsq.common.sds.SDS;
 import com.jllsq.handler.command.RedisCommand;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.config.Shared;
+import com.jllsq.handler.command.RedisCommandEnum;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,7 +26,7 @@ public class RedisServerHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext context, Object message){
         RedisClient client = (RedisClient) message;
         client.setDb(redisServer.getDb()[client.getDictId()]);
-        RedisCommand command = redisServer.getRedisCommandTable().get(client.getArgv()[0].getPtr());
+        RedisCommand command = RedisCommandEnum.getCommandByKey((SDS) (client.getArgv()[0].getPtr())).getCommand();
         RedisObject response = null;
         if (command != null) {
             response = command.process(client);

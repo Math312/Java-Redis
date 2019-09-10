@@ -22,6 +22,10 @@ public class AppendCommand extends RedisCommand {
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
         RedisObject result = null;
+        if (expireIfNeed(db,client.getArgv()[1])) {
+            result = Shared.getInstance().getNokeyerr();
+            return result;
+        }
         DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
         if (entry == null) {
             boolean addResult = db.getDict().add(client.getArgv()[1], client.getArgv()[2]);

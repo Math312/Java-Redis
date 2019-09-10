@@ -106,6 +106,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
                 } else {
                     last.setNext(entry.getNext());
                 }
+                this.used --;
                 return true;
             }else {
                 last = entry;

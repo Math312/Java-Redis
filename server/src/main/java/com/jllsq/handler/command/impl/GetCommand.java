@@ -18,13 +18,16 @@ public class GetCommand extends RedisCommand {
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
         RedisObject result = null;
-        DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
-        if (entry != null) {
-            result = entry.getValue();
-        } else {
+        if (expireIfNeed(db, client.getArgv()[1])) {
             result = Shared.getInstance().getNokeyerr();
+        } else {
+            DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
+            if (entry != null) {
+                result = entry.getValue();
+            } else {
+                result = Shared.getInstance().getNokeyerr();
+            }
         }
-
         return result;
     }
 }
