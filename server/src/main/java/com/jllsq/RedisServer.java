@@ -7,8 +7,11 @@ import com.jllsq.common.sds.SDS;
 import com.jllsq.common.sds.exception.SDSMaxLengthException;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
+import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.handler.command.impl.*;
 import com.jllsq.handler.decoder.RedisObjectDecoder;
 import com.jllsq.handler.decoder.RedisObjectEncoder;
+import com.jllsq.holder.RedisServerStateHolder;
 import com.jllsq.log.RedisLog;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -85,9 +88,7 @@ public class RedisServer {
     private RedisDb[] db;
     private int dbNum;
     private Dict<SDS, Object> sharingPool;
-    private long dirty;
     private List clients;
-    private NioEventLoop nioEventLoop;
     private Date lastSave;
     private Date stateStartTime;
     private long stateNumCommands;
@@ -133,8 +134,9 @@ public class RedisServer {
                     new Runnable() {
                         @Override
                         public void run() {
+                            System.out.println(Thread.currentThread().getName());
                             cronLoops++;
-                            unixTime = new Date();
+                            RedisServerStateHolder.getInstance().updateUnixTime();
                             for (int i = 0; i < db.length; i++) {
                                 int size = db[i].getDict().getSize();
                                 int used = db[i].getDict().getUsed();
@@ -241,86 +243,12 @@ public class RedisServer {
 
     private void initCommand() {
         redisCommandTable = new HashMap<>();
-        redisCommandTable.put(new SDS("COMMAND"), new RedisCommand(new SDS("COMMAND"), 1) {
-            @Override
-            public RedisObject process(RedisClient client) {
-                RedisObject result = shared.getOk();
-                return result;
-            }
-        });
-        redisCommandTable.put(new SDS("set"), new RedisCommand(new SDS("SET"), 1) {
-            @Override
-            public RedisObject process(RedisClient client) {
-                int db = client.getDictId();
-                RedisObject result = null;
-                if (getDb()[db].getDict().add(client.getArgv()[1], client.getArgv()[2])) {
-                    result = getShared().getCone();
-                } else {
-                    result = getShared().getCzero();
-                }
-                return result;
-            }
-        });
-        redisCommandTable.put(new SDS("get"), new RedisCommand(new SDS("GET"), 1) {
-            @Override
-            public RedisObject process(RedisClient client) {
-                int db = client.getDictId();
-                RedisObject result = null;
-                DictEntry<RedisObject, RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
-                if (entry != null) {
-                    result = entry.getValue();
-                } else {
-                    result = shared.getNokeyerr();
-                }
-
-                return result;
-            }
-        });
-
-        redisCommandTable.put(new SDS("exists"), new RedisCommand(new SDS("EXISTS"), 1) {
-            @Override
-            public RedisObject process(RedisClient client) {
-                int db = client.getDictId();
-                RedisObject result = null;
-                DictEntry<RedisObject, RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
-                if (entry != null) {
-                    result = shared.getCone();
-                } else {
-                    result = shared.getCzero();
-                }
-                return result;
-            }
-        });
-
-        redisCommandTable.put(new SDS("append"), new RedisCommand(new SDS("APPEND"), 1) {
-            @Override
-            public RedisObject process(RedisClient client) {
-                int db = client.getDictId();
-                RedisObject result = null;
-                DictEntry<RedisObject, RedisObject> entry = getDb()[db].getDict().find(client.getArgv()[1]);
-                if (entry == null) {
-                    boolean addResult = getDb()[db].getDict().add(client.getArgv()[1], client.getArgv()[2]);
-                    if (addResult) {
-                        return getDb()[db].getDict().find(client.getArgv()[1]).getValue();
-                    } else {
-                        return shared.getCzero();
-                    }
-                } else {
-                    RedisObject value = entry.getValue();
-                    if (value.getType() != REDIS_STRING) {
-                        return shared.getWrongtypeerr();
-                    } else {
-                        try {
-                            value.setPtr(((SDS) (entry.getValue().getPtr())).append(((SDS) (client.getArgv()[2].getPtr()))));
-                        } catch (SDSMaxLengthException e) {
-                            e.printStackTrace();
-                            return shared.getErr();
-                        }
-                        return entry.getValue();
-                    }
-                }
-            }
-        });
+        redisCommandTable.put(new SDS("COMMAND"),new CommandCommand());
+        redisCommandTable.put(new SDS("set"),new SetCommand());
+        redisCommandTable.put(new SDS("get"), new GetCommand());
+        redisCommandTable.put(new SDS("exists"), new ExistsCommand());
+        redisCommandTable.put(new SDS("append"), new AppendCommand());
+        redisCommandTable.put(new SDS("expire"), new ExpireCommand());
     }
 
     private void loadServerConfig(String configFileName) {
