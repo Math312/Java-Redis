@@ -23,7 +23,7 @@ public abstract class RedisCommand {
     public abstract RedisObject process(RedisClient client);
 
     public boolean expireIfNeed(RedisDb db,RedisObject key) {
-        long time = RedisServerStateHolder.getInstance().getUnixTimeLong();
+        long time = RedisServerStateHolder.getInstance().getUnixTime();
         DictEntry<RedisObject,RedisObject> entry = db.getExpires().find(key);
         if (entry == null) {
             return false;

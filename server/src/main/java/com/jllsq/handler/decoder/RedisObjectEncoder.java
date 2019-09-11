@@ -27,7 +27,13 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
                 }
             }
         } else if (msg.getEncoding() == RedisObject.REDIS_ENCODING_INT) {
-
+            byte[] bytes = ptr.toString().getBytes();
+            byte[] content = new byte[bytes.length+3];
+            System.arraycopy(bytes,0,content,1,bytes.length);
+            content[0]=':';
+            content[content.length-1] = '\n';
+            content[content.length-2] = '\r';
+            out.writeBytes(Unpooled.copiedBuffer(content));
         } else if (msg.getEncoding() == RedisObject.REDIS_ENCODING_ZIPMAP) {
 
         } else if (msg.getEncoding() == RedisObject.REDIS_ENCODING_HT) {

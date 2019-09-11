@@ -10,7 +10,8 @@ public enum RedisCommandEnum {
     EXPIRE_COMMAND(new SDS("expire"),new ExpireCommand()),
     EXISTS_COMMAND(new SDS("exists"),new ExistsCommand()),
     COMMAND_COMMAND(new SDS("command"),new CommandCommand()),
-    APPEND_COMMAND(new SDS("append"),new AppendCommand());
+    APPEND_COMMAND(new SDS("append"),new AppendCommand()),
+    TTL_COMMAND(new SDS("ttl"),new TtlCommand());
 
     private SDS key;
     private RedisCommand command;

@@ -150,13 +150,13 @@ public class RedisServer {
                                 }
                             }
                         }
-
                         for (int i = 0;i < db.length;i ++) {
                             int expired = 0;
                             Dict<RedisObject,RedisObject> expires = db[i].getExpires();
                             do {
-                                int num = expires.getSize();
-                                long time = RedisServerStateHolder.getInstance().getUnixTimeLong();
+                                int num = expires.getUsed();
+                                long time = RedisServerStateHolder.getInstance().getUnixTime();
+
                                 if (num > REDIS_EXPIRELOOKUPS_PER_CRON) {
                                     num = REDIS_EXPIRELOOKUPS_PER_CRON;
                                 }
@@ -165,8 +165,9 @@ public class RedisServer {
                                     if (entry == null){
                                         break;
                                     } else {
-                                        long expireTime = Long.parseLong(((SDS)(entry.getValue().getPtr())).getContent());
+                                        long expireTime = (long)(entry.getValue().getPtr());
                                         if (expireTime < time) {
+                                            System.out.println(entry.getKey());
                                             db[i].getDict().delete(entry.getKey());
                                             expires.delete(entry.getKey());
                                             expired ++;

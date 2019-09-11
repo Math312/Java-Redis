@@ -33,11 +33,11 @@ public class RedisServerStateHolder {
     /**
      * record the time of redis
      * */
-    private Date unixTime;
+    private long unixTime;
 
     private RedisServerStateHolder() {
         this.dirty = 0;
-        this.unixTime = new Date();
+        this.unixTime = System.currentTimeMillis();
     }
 
     public void incrDirty() {
@@ -45,15 +45,11 @@ public class RedisServerStateHolder {
     }
 
     public void updateUnixTime() {
-        this.unixTime = new Date();
+        this.unixTime = System.currentTimeMillis();
     }
 
-    public Date getUnixTime() {
-        return new Date(unixTime.getTime());
-    }
-
-    public long getUnixTimeLong() {
-        return unixTime.getTime();
+    public long getUnixTime() {
+        return this.unixTime;
     }
 
 }
