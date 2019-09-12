@@ -5,7 +5,7 @@ import com.jllsq.common.sds.exception.SDSMaxLengthException;
 
 import java.io.UnsupportedEncodingException;
 
-public class SDS implements RedisClonable,Comparable<SDS> {
+public class SDS implements RedisClonable, Comparable<SDS> {
 
     public static int INIT_SIZE = 1024;
     public static int EXPAND_SPLIT = 1024 * 1024;
@@ -23,11 +23,11 @@ public class SDS implements RedisClonable,Comparable<SDS> {
         this.content = new byte[1024];
     }
 
-    public SDS(byte[] bytes){
+    public SDS(byte[] bytes) {
         this.length = 1024;
         this.used = bytes.length;
         this.content = new byte[1024];
-        System.arraycopy(bytes,0,content,0,this.used);
+        System.arraycopy(bytes, 0, content, 0, this.used);
     }
 
     public SDS(String str) {
@@ -49,20 +49,19 @@ public class SDS implements RedisClonable,Comparable<SDS> {
         }
     }
 
-    private boolean expandIfNecessary(byte[] content) throws SDSMaxLengthException {
-        int length = content.length;
-        if (length > MAX_LENGTH) {
+    private boolean expandIfNecessary(int size) throws SDSMaxLengthException {
+        if (size > MAX_LENGTH) {
             throw new SDSMaxLengthException(content);
         }
-        if (length > this.length) {
+        if (size > this.length) {
             int newLen = 0;
             if (this.length <= EXPAND_SPLIT) {
                 newLen = Math.min(this.length * 2, EXPAND_SPLIT);
             } else {
                 newLen = this.length + EXPAND_SPLIT;
             }
-            if (newLen < length) {
-                expandIfNecessary(content);
+            if (newLen < size) {
+                expandIfNecessary(size);
             } else {
                 System.arraycopy(content, 0, this.content, 0, length);
             }
@@ -72,6 +71,14 @@ public class SDS implements RedisClonable,Comparable<SDS> {
         }
     }
 
+    public SDS append(SDS sds) throws SDSMaxLengthException {
+        int newUsed = this.used + sds.used;
+        expandIfNecessary(newUsed);
+        System.arraycopy(sds.content,0,this.content,this.used,sds.used);
+        this.used = newUsed;
+        return this;
+    }
+
     public String setContent(String str) {
         try {
             byte[] content = str.getBytes("utf-8");
@@ -79,7 +86,8 @@ public class SDS implements RedisClonable,Comparable<SDS> {
                 System.out.println("this is a long sds: " + str);
             }
             try {
-                expandIfNecessary(content);
+                expandIfNecessary(content.length);
+                System.arraycopy(content, 0, this.content, 0, content.length);
                 this.used = content.length;
             } catch (SDSMaxLengthException e) {
                 e.printStackTrace();
@@ -159,7 +167,7 @@ public class SDS implements RedisClonable,Comparable<SDS> {
         if (((SDS) obj).used != this.used) {
             return false;
         }
-        for (int i = 0;i < used;i ++) {
+        for (int i = 0; i < used; i++) {
             if (content[i] != ((SDS) obj).getBytes()[i]) {
                 return false;
             }
@@ -178,7 +186,7 @@ public class SDS implements RedisClonable,Comparable<SDS> {
         sds.length = this.length;
         sds.used = this.used;
         sds.content = new byte[sds.length];
-        for (int i = 0;i < sds.length;i ++) {
+        for (int i = 0; i < sds.length; i++) {
             sds.content[i] = this.content[i];
         }
         return sds;
@@ -194,11 +202,11 @@ public class SDS implements RedisClonable,Comparable<SDS> {
         }
         if (sds.used > this.used) {
             return -1;
-        } else if (sds.used < this.used){
+        } else if (sds.used < this.used) {
             return 1;
         }
         if (sds.used == this.used) {
-            for (int i = 0;i < this.used;i ++) {
+            for (int i = 0; i < this.used; i++) {
                 if (sds.content[i] != this.content[i]) {
                     if (this.content[i] > sds.content[i]) {
                         return 1;

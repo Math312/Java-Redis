@@ -1,4 +1,4 @@
-package com.jllsq.network;
+package com.jllsq.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

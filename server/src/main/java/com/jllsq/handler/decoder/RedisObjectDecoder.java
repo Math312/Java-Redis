@@ -1,19 +1,16 @@
-package com.jllsq.decoder;
+package com.jllsq.handler.decoder;
 
 import com.jllsq.common.entity.RedisClient;
-import com.jllsq.common.entity.RedisCommand;
+import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
-import com.sun.security.ntlm.Client;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.util.CharsetUtil;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class RedisCommandDecoder extends ByteToMessageDecoder {
+public class RedisObjectDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -28,7 +25,7 @@ public class RedisCommandDecoder extends ByteToMessageDecoder {
             }
             byte[] num = Arrays.copyOf(head,head.length-2);
             int length = byteArrayToInt(num);
-            SDS[] argv = new SDS[length];
+            RedisObject[] argv = new RedisObject[length];
             for (int i = 0;i < length;i ++) {
                 byte dollar = in.readByte();
                 if (dollar != '$') {
@@ -43,8 +40,7 @@ public class RedisCommandDecoder extends ByteToMessageDecoder {
                 ByteBuf command = in.readBytes(commandLen);
                 byte[] buff = new byte[commandLen];
                 command.getBytes(0,buff);
-                argv[i] = new SDS(buff);
-                System.out.println(argv[i].getContent());
+                argv[i] = new RedisObject(false,RedisObject.REDIS_STRING,new SDS(buff));
                 ByteBuf nextLine = in.readBytes(2);
             }
             client.setDictId(0);

@@ -1,4 +1,4 @@
-package com.jllsq.network;
+package com.jllsq.handler;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;

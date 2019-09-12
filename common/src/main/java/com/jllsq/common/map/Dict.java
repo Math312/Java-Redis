@@ -1,27 +1,22 @@
 package com.jllsq.common.map;
-import com.jllsq.common.RedisClonable;
-
 import java.util.Iterator;
+import java.util.Random;
 
-public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<DictEntry<U,T>>{
+public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
     private DictEntry<U,T>[] table;
-    private DictType<U,T> type;
     private int size;
     private int sizeMask;
     private int used;
     private Object privateData;
     private  static final int INIT_SIZE = 4;
 
-    public <U,T> Dict(DictType type, Object privateData){
+    public <U,T> Dict(Object privateData){
         this.table = new DictEntry[4];
         this.size = 4;
         this.sizeMask = this.size - 1;
         this.used = 0;
         this.privateData = privateData;
-        this.type = type;
     }
-
-
 
     @Override
     public Iterator<DictEntry<U,T>> iterator() {
@@ -35,13 +30,17 @@ public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<Di
         int hash;
         while (iterator.hasNext()){
             DictEntry<U,T> dictEntry = iterator.next();
-            int hash2 = hashFunction(this.type.keyDup(dictEntry.getKey())) & sizeMask;
+            int hash2 = hashFunction(dictEntry.getKey()) & sizeMask;
             if (temp[hash2] == null) {
-                temp[hash2] = new DictEntry(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()));
+                temp[hash2] = dictEntry;
             } else {
                 DictEntry<U,T> tempEntry = temp[hash2];
-                DictEntry newEntry = new DictEntry(this.type.keyDup(dictEntry.getKey()),this.type.valueDup(dictEntry.getValue()),tempEntry);
-                temp[hash2] = newEntry;
+                try {
+                    temp[hash2] = ((DictEntry) (dictEntry.clone()));
+                    temp[hash2].setNext(tempEntry);
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
             }
         }
         this.table = temp;
@@ -71,16 +70,17 @@ public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<Di
             return false;
         }
         if (find(key) != null){
-            return false;
+            replace(key,value);
+            return true;
         }
         expandIfNecessary();
         int hash = hashFunction(key) & sizeMask;
         DictEntry<U,T> entry = table[hash];
         DictEntry<U,T> newEntry = null;
         if (entry == null){
-            newEntry = new DictEntry<>(this.type.keyDup(key),this.type.valueDup(value));
+            newEntry = new DictEntry<>(key,value);
         }else {
-            newEntry = new DictEntry<>(this.type.keyDup(key),this.type.valueDup(value),entry);
+            newEntry = new DictEntry<>(key,value,entry);
         }
         table[hash] = newEntry;
         this.used ++;
@@ -101,16 +101,13 @@ public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<Di
         DictEntry<U,T> entry = table[hash];
         DictEntry<U,T> last = null;
         while (entry != null) {
-            if (this.type.keyCompare(key,entry.getKey()) == 0){
+            if (key.equals(entry.getKey())){
                 if (last == null) {
                     table[hash] = null;
-                    this.type.keyDestructor(entry.getKey());
-                    this.type.valueDestructor(entry.getValue());
                 } else {
                     last.setNext(entry.getNext());
-                    this.type.keyDestructor(entry.getKey());
-                    this.type.valueDestructor(entry.getValue());
                 }
+                this.used --;
                 return true;
             }else {
                 last = entry;
@@ -124,7 +121,7 @@ public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<Di
         int hash = hashFunction(key) & sizeMask;
         DictEntry<U,T> entry = table[hash];
         while (entry != null) {
-            if (this.type.keyCompare(key,entry.getKey()) == 0){
+            if (key.equals(entry.getKey())){
                 return entry;
             }else {
                 entry = entry.getNext();
@@ -141,7 +138,7 @@ public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<Di
 
 
     public int hashFunction(U key) {
-        return this.type.hashFunction(key);
+        return key.hashCode() & sizeMask;
     }
 
     public int getUsed() {
@@ -154,7 +151,7 @@ public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<Di
 
 
 
-    public class DictEntryIterator<U extends RedisClonable & Comparable,T> implements Iterator<DictEntry<U,T>> {
+    public class DictEntryIterator<U,T> implements Iterator<DictEntry<U,T>> {
 
         private int index = -1;
         private int walked = 0;
@@ -171,30 +168,53 @@ public class Dict<U extends RedisClonable & Comparable,T> implements Iterable<Di
 
         @Override
         public DictEntry<U, T> next() {
-            int label = 0;
-            if (entry == null) {
-                label = 1;
-            }
-
-            while(entry == null) {
-                index ++;
-                entry = this.dict.table[index];
-            }
-            walked ++;
-            if (label == 0) {
+            if (entry != null && entry.getNext() != null) {
                 entry = entry.getNext();
-                return entry;
+                walked ++;
+            }
+            else {
+                index ++;
+                if (this.dict.table[index] != null) {
+                    entry = this.dict.table[index];
+                    walked ++;
+                } else {
+                    entry = next();
+                }
             }
             return entry;
         }
     }
 
-    public int dictGenHashFunction(byte[] buf) {
-        int hash = 5381;
-        for (int i = 0;i < buf.length;i ++) {
-            hash = ((hash << 5) + hash) + buf[i];
+    public DictEntry<U,T> dictGetRandomKey() {
+        DictEntry<U,T> result = null;
+        if (this.used == 0) {
+            return null;
         }
-        return hash;
+        int randomIndex = 0;
+        Random random = new Random();
+        do {
+            randomIndex = random.nextInt(this.size);
+            result = table[randomIndex];
+        } while (result == null);
+        int length = 0;
+        while (result != null){
+            result = result.getNext();
+            length ++;
+        }
+        result =table[randomIndex];
+        randomIndex = random.nextInt(length);
+        while (randomIndex > 0){
+            result = result.getNext();
+        }
+        return result;
     }
+
+//    public int dictGenHashFunction(byte[] buf) {
+//        int hash = 5381;
+//        for (int i = 0;i < buf.length;i ++) {
+//            hash = ((hash << 5) + hash) + buf[i];
+//        }
+//        return hash;
+//    }
 
 }
