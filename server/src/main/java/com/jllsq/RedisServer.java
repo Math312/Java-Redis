@@ -9,6 +9,7 @@ import com.jllsq.handler.RedisServerHandler;
 import com.jllsq.handler.command.RedisCommand;
 import com.jllsq.handler.decoder.RedisObjectDecoder;
 import com.jllsq.handler.decoder.RedisObjectEncoder;
+import com.jllsq.holder.RedisServerDbHolder;
 import com.jllsq.holder.RedisServerStateHolder;
 import com.jllsq.log.RedisLog;
 import io.netty.bootstrap.ServerBootstrap;
@@ -88,8 +89,6 @@ public class RedisServer {
     private Date unixTime;
 
     private int port;
-    private RedisDb[] db;
-    private int dbNum;
     private Dict<SDS, Object> sharingPool;
     private List clients;
     private Date lastSave;
@@ -136,6 +135,7 @@ public class RedisServer {
             ScheduledFuture<?> scheduledFuture = group.scheduleAtFixedRate(
                     () -> {
                         cronLoops++;
+                        RedisDb[] db = RedisServerDbHolder.getInstance().getDb();
                         RedisServerStateHolder.getInstance().updateUnixTime();
                         for (int i = 0; i < db.length; i++) {
                             int size = db[i].getDict().getSize();
@@ -206,10 +206,6 @@ public class RedisServer {
             e.printStackTrace();
         }
         createShareObjects();
-        this.db = new RedisDb[this.dbNum];
-        for (int i = 0; i < this.dbNum; i++) {
-            this.db[i] = new RedisDb(i);
-        }
         this.cronLoops = 0;
         if (logFile != null) {
             try {
@@ -311,10 +307,13 @@ public class RedisServer {
                             fileOutputStream.close();
                         }
                     } else if (config[0].equals(DATABASES) && config.length == 2) {
-                        this.dbNum = Integer.parseInt(config[1]);
-                        if (this.dbNum < 1) {
+
+                        int dbNum = Integer.parseInt(config[1]);
+                        if (dbNum < 1) {
                             throw new RuntimeException();
                         }
+                        RedisServerDbHolder.getInstance().setDbNum(Integer.parseInt(config[1])); ;
+
                     } else if (config[0].equals(MAX_CLIENTS) && config.length == 2) {
                         this.maxClients = Integer.parseInt(config[1]);
                     } else if (config[0].equals(MAX_MEMORY) && config.length == 2) {
@@ -373,7 +372,6 @@ public class RedisServer {
 
     private void initServerConfig() {
         this.stateStartTime = new Date();
-        this.dbNum = REDIS_DEFAULT_DBNUM;
         this.port = REDIS_SERVERPORT;
         this.verbosity = REDIS_VERBOSE;
         this.maxIdleTime = REDIS_MAXIDLETIME;
