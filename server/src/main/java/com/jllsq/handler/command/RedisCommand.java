@@ -28,7 +28,7 @@ public abstract class RedisCommand {
         if (entry == null) {
             return false;
         } else {
-            long expireTime = Long.parseLong(((SDS)(entry.getValue().getPtr())).getContent());
+            long expireTime = (long) entry.getValue().getPtr();
             if (expireTime < time) {
                 db.getExpires().delete(key);
                 db.getDict().delete(key);

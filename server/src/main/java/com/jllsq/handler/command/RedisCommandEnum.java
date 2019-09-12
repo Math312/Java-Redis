@@ -11,7 +11,10 @@ public enum RedisCommandEnum {
     EXISTS_COMMAND(new SDS("exists"),new ExistsCommand()),
     COMMAND_COMMAND(new SDS("command"),new CommandCommand()),
     APPEND_COMMAND(new SDS("append"),new AppendCommand()),
-    TTL_COMMAND(new SDS("ttl"),new TtlCommand());
+    TTL_COMMAND(new SDS("ttl"),new TtlCommand()),
+    PING_COMMAND(new SDS("ping"),new PingCommand()),
+    AUTH_COMMAND(new SDS("auth"),new AuthCommand()),
+    SHUTDOWN_COMMAND(new SDS("shutdown"),new ShutdownCommand());
 
     private SDS key;
     private RedisCommand command;

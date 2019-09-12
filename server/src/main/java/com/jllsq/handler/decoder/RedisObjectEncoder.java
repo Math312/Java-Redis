@@ -18,11 +18,13 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
             else {
                 if (msg.getType() == RedisObject.REDIS_STRING) {
                     byte[] temp = ((SDS)ptr).getBytes();
-                    byte[] content = new byte[((SDS)ptr).getUsed()+3];
+                    byte[] content = new byte[((SDS)ptr).getUsed()+5];
                     content[0]='+';
+                    content[1]='"';
+                    content[content.length-3] = '"';
                     content[content.length-1] = '\n';
                     content[content.length-2] = '\r';
-                    System.arraycopy(temp,0,content,1,((SDS)ptr).getUsed());
+                    System.arraycopy(temp,0,content,2,((SDS)ptr).getUsed());
                     out.writeBytes(Unpooled.copiedBuffer(content));
                 }
             }
