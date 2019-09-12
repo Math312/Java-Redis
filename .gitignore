@@ -8,3 +8,4 @@
 ./settings
 application.pid
 redis.log
+./target/*
