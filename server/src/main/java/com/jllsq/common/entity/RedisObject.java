@@ -4,18 +4,6 @@ import lombok.Data;
 
 @Data
 public class RedisObject implements Cloneable,Comparable<RedisObject> {
-
-    public static final byte REDIS_ENCODING_RAW = 0;
-    public static final byte REDIS_ENCODING_INT = 1;
-    public static final byte REDIS_ENCODING_ZIPMAP = 2;
-    public static final byte REDIS_ENCODING_HT = 3;
-
-    public static final byte REDIS_STRING = 0;
-    public static final byte REDIS_LIST = 1;
-    public static final byte REDIS_SET = 2;
-    public static final byte REDIS_ZSET = 3;
-    public static final byte REDIS_HASH = 4;
-
     private boolean isShared;
     private Object ptr;
     private byte type;
@@ -24,14 +12,6 @@ public class RedisObject implements Cloneable,Comparable<RedisObject> {
     private int refCount;
 
     public RedisObject(){}
-
-    public RedisObject(boolean isShared,byte type,Object ptr) {
-        this.isShared = isShared;
-        this.type = type;
-        this.ptr = ptr;
-        this.encoding = REDIS_ENCODING_RAW;
-        this.refCount = 1;
-    }
 
     public RedisObject(boolean isShared,byte type,Object ptr, byte encoding) {
         this.isShared = isShared;

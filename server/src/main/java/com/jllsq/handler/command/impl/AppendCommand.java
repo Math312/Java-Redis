@@ -10,7 +10,7 @@ import com.jllsq.config.Shared;
 import com.jllsq.handler.command.RedisCommand;
 import com.jllsq.holder.RedisServerStateHolder;
 
-import static com.jllsq.common.entity.RedisObject.REDIS_STRING;
+import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
 public class AppendCommand extends RedisCommand {
 

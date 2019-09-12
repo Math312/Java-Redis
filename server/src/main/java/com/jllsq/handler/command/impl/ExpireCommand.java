@@ -11,6 +11,8 @@ import com.jllsq.holder.RedisServerStateHolder;
 
 import java.util.Date;
 
+import static com.jllsq.holder.RedisServerObjectHolder.REDIS_ENCODING_INT;
+
 public class ExpireCommand extends RedisCommand {
 
     public ExpireCommand() {
@@ -28,7 +30,7 @@ public class ExpireCommand extends RedisCommand {
             DictEntry<RedisObject, RedisObject> expireEntry = db.getExpires().find(client.getArgv()[1]);
             RedisObject object = client.getArgv()[2];
             long expires = Long.parseLong(((SDS)(object.getPtr())).getContent())*1000 + System.currentTimeMillis();
-            object.setEncoding(RedisObject.REDIS_ENCODING_INT);
+            object.setEncoding(REDIS_ENCODING_INT);
             object.setPtr(expires);
             if (expireEntry == null) {
                 db.getExpires().add(client.getArgv()[1],client.getArgv()[2]);

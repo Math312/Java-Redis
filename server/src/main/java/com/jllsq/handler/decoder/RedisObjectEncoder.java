@@ -7,16 +7,18 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+import static com.jllsq.holder.RedisServerObjectHolder.*;
+
 public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
     @Override
     protected void encode(ChannelHandlerContext ctx, RedisObject msg, ByteBuf out) throws Exception {
         Object ptr = msg.getPtr();
-        if (msg.getEncoding() == RedisObject.REDIS_ENCODING_RAW) {
+        if (msg.getEncoding() == REDIS_ENCODING_RAW) {
             if (msg.isShared()){
                 out.writeBytes(((SDS)ptr).getBytes());
             }
             else {
-                if (msg.getType() == RedisObject.REDIS_STRING) {
+                if (msg.getType() == REDIS_STRING) {
                     byte[] temp = ((SDS)ptr).getBytes();
                     byte[] content = new byte[((SDS)ptr).getUsed()+5];
                     content[0]='+';
@@ -28,7 +30,7 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
                     out.writeBytes(Unpooled.copiedBuffer(content));
                 }
             }
-        } else if (msg.getEncoding() == RedisObject.REDIS_ENCODING_INT) {
+        } else if (msg.getEncoding() == REDIS_ENCODING_INT) {
             byte[] bytes = ptr.toString().getBytes();
             byte[] content = new byte[bytes.length+3];
             System.arraycopy(bytes,0,content,1,bytes.length);
@@ -36,9 +38,9 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
             content[content.length-1] = '\n';
             content[content.length-2] = '\r';
             out.writeBytes(Unpooled.copiedBuffer(content));
-        } else if (msg.getEncoding() == RedisObject.REDIS_ENCODING_ZIPMAP) {
+        } else if (msg.getEncoding() == REDIS_ENCODING_ZIPMAP) {
 
-        } else if (msg.getEncoding() == RedisObject.REDIS_ENCODING_HT) {
+        } else if (msg.getEncoding() == REDIS_ENCODING_HT) {
 
         }
         return;

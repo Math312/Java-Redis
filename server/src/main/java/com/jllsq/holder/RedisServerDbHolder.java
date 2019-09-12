@@ -1,6 +1,7 @@
 package com.jllsq.holder;
 
 import com.jllsq.common.entity.RedisDb;
+import com.jllsq.common.list.List;
 
 public class RedisServerDbHolder {
 
@@ -8,6 +9,7 @@ public class RedisServerDbHolder {
 
     private RedisDb db[];
     private int dbNum;
+    private List objFreeList;
 
     public RedisDb[] getDb() {
         return db;
