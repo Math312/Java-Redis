@@ -2,6 +2,7 @@ package com.jllsq.holder;
 
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.list.List;
+import org.apache.commons.lang3.SerializationUtils;
 
 public class RedisServerDbHolder {
 
@@ -40,7 +41,11 @@ public class RedisServerDbHolder {
         return RedisServerDbHolderEnum.INSTANCE.redisServerDbHolder;
     }
 
-    enum RedisServerDbHolderEnum{
+    public  RedisDb[] snapshot() {
+        return SerializationUtils.clone(this.db);
+    }
+
+    enum RedisServerDbHolderEnum {
         INSTANCE;
 
         private RedisServerDbHolder redisServerDbHolder;
@@ -48,5 +53,9 @@ public class RedisServerDbHolder {
         RedisServerDbHolderEnum() {
             this.redisServerDbHolder = new RedisServerDbHolder();
         }
+    }
+
+    public void rdbSave(String fileName) {
+
     }
 }

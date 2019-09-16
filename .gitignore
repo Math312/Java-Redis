@@ -9,3 +9,4 @@
 application.pid
 redis.log
 ./target/*
+*.aof

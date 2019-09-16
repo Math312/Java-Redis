@@ -12,6 +12,7 @@ import com.jllsq.handler.decoder.RedisObjectEncoder;
 import com.jllsq.holder.RedisServerDbHolder;
 import com.jllsq.holder.RedisServerEventLoopHolder;
 import com.jllsq.holder.RedisServerStateHolder;
+import com.jllsq.log.RedisAofLog;
 import com.jllsq.log.RedisLog;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -22,6 +23,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import com.jllsq.common.list.List;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.Data;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -180,6 +182,7 @@ public class RedisServer {
                                     }
                                 }
                             } while (expired > REDIS_EXPIRELOOKUPS_PER_CRON / 4);
+
                         }
 
                     }, 0, 1, TimeUnit.SECONDS);
@@ -216,6 +219,14 @@ public class RedisServer {
         if (logFile != null) {
             try {
                 RedisLog.getInstance().init(logFile.getContent());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        appendFileName = new SDS("redis.aof");
+        if (appendFileName != null) {
+            try {
+                RedisAofLog.getInstance().init(appendFileName.getContent());
             } catch (IOException e) {
                 e.printStackTrace();
             }

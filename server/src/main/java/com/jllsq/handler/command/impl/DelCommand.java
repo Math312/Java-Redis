@@ -7,6 +7,7 @@ import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.holder.RedisServerStateHolder;
 
 public class DelCommand extends RedisCommand {
 
@@ -24,6 +25,7 @@ public class DelCommand extends RedisCommand {
             dataEntry = db.getExpires().delete(client.getArgv()[1]);
             dataEntry.getValue().destructor();
             dataEntry.getKey().destructor();
+            RedisServerStateHolder.getInstance().incrDirty();
         } else {
             return Shared.getInstance().getNokeyerr();
         }

@@ -52,4 +52,7 @@ public class RedisServerStateHolder {
         return this.unixTime;
     }
 
+    public int getDirty() {
+        return dirty;
+    }
 }

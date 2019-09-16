@@ -39,6 +39,7 @@ public class ExpireCommand extends RedisCommand {
             }
             RedisServerStateHolder.getInstance().incrDirty();
             result = Shared.getInstance().getCone();
+            RedisServerStateHolder.getInstance().incrDirty();
         }
         return result;
     }

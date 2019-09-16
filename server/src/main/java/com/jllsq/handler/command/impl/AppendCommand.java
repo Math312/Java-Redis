@@ -49,6 +49,7 @@ public class AppendCommand extends RedisCommand {
                 }
                 return entry.getValue();
             }
+
         }
     }
 }
