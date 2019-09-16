@@ -168,9 +168,13 @@ public class RedisServer {
                                     } else {
                                         long expireTime = (long)(entry.getValue().getPtr());
                                         if (expireTime < time) {
-                                            System.out.println(entry.getKey());
-                                            db[i].getDict().delete(entry.getKey());
-                                            expires.delete(entry.getKey());
+                                            DictEntry<RedisObject,RedisObject> dataEntry = null;
+                                            dataEntry = db[i].getDict().delete(entry.getKey());
+                                            dataEntry.getKey().destructor();
+                                            dataEntry.getValue().destructor();
+                                            dataEntry = expires.delete(entry.getKey());
+                                            dataEntry.getKey().destructor();
+                                            dataEntry.getValue().destructor();
                                             expired ++;
                                         }
                                     }

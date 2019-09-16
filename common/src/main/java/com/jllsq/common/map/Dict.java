@@ -96,7 +96,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
         return false;
     }
 
-    public boolean delete(U key) {
+    public DictEntry<U,T> delete(U key) {
         int hash = hashFunction(key);
         DictEntry<U,T> entry = table[hash];
         DictEntry<U,T> last = null;
@@ -108,13 +108,13 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
                     last.setNext(entry.getNext());
                 }
                 this.used --;
-                return true;
+                return entry;
             }else {
                 last = entry;
                 entry = entry.getNext();
             }
         }
-        return false;
+        return null;
     }
 
     public DictEntry<U, T> find(U key) {

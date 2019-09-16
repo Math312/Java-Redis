@@ -18,7 +18,7 @@ public class  Shared {
             select5,select6,select7,select8,select9;
 
     private Shared() {
-
+        init();
     }
 
     private void init() {

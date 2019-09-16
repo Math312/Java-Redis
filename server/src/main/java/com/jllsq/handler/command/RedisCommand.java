@@ -30,8 +30,12 @@ public abstract class RedisCommand {
         } else {
             long expireTime = (long) entry.getValue().getPtr();
             if (expireTime < time) {
-                db.getExpires().delete(key);
-                db.getDict().delete(key);
+                DictEntry<RedisObject,RedisObject> dataEntry = db.getExpires().delete(key);
+                dataEntry.getKey().destructor();
+                dataEntry.getValue().destructor();
+                DictEntry<RedisObject,RedisObject> expireEntry = db.getDict().delete(key);
+                expireEntry.getKey().destructor();
+                expireEntry.getValue().destructor();
                 return true;
             }
             return false;

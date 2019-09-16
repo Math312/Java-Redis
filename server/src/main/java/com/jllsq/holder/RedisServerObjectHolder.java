@@ -33,10 +33,15 @@ public class RedisServerObjectHolder {
             result.setType(type);
             result.setShared(isShared);
             result.setRefCount(0);
+            freeList.remove(0);
         } else {
             result = new RedisObject(isShared,type,ptr,REDIS_ENCODING_RAW);
         }
         return result;
+    }
+
+    public boolean contains(RedisObject object) {
+        return freeList.contains(object);
     }
 
 

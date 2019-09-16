@@ -1,5 +1,6 @@
 package com.jllsq.common.entity;
 
+import com.jllsq.holder.RedisServerObjectHolder;
 import lombok.Data;
 
 @Data
@@ -19,6 +20,10 @@ public class RedisObject implements Cloneable,Comparable<RedisObject> {
         this.ptr = ptr;
         this.encoding = encoding;
         this.refCount = 1;
+    }
+
+    public void destructor() {
+        RedisServerObjectHolder.getInstance().deleteObject(this);
     }
 
     @Override
