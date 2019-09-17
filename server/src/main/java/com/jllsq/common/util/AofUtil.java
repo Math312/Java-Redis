@@ -3,13 +3,57 @@ package com.jllsq.common.util;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.sds.SDS;
 import org.apache.commons.lang3.Conversion;
-import org.apache.commons.lang3.SerializationUtils;
 
+import static com.jllsq.config.Constants.*;
+
+/**
+ * @author yanlishao
+ */
 public class AofUtil {
 
-//    public SDS[] decode(byte[] data) {
-//
-//    }
+    public static boolean checkCrlf(byte[] bytes,int start) {
+        return bytes[start] != CR || bytes[start + 1] != LF;
+    }
+
+    public SDS[] decode(byte[] data) {
+        if (data == null || data.length == 0) {
+            return null;
+        }
+        int index = 0;
+        if (data[0] != STAR) {
+            return null;
+        }
+        index ++;
+        int length = IntegerUtil.getMaxIntegerLenInBytes(data,index);
+        int len = IntegerUtil.bytesToInt(data,index,length);
+        index += length;
+        if (checkCrlf(data, index)) {
+            return null;
+        }
+        index += 2;
+        SDS[] result = new SDS[len];
+        for (int i = 0;i < len;i ++) {
+            if (data[index] != DOLLAR) {
+                return null;
+            }
+            int innerLen = IntegerUtil.getMaxIntegerLenInBytes(data,index);;
+            int commandLen = IntegerUtil.bytesToInt(data,index,innerLen);
+            index += innerLen;
+            if (checkCrlf(data, index)) {
+                return null;
+            }
+            index += 2;
+            byte[] bytes =new byte[innerLen];
+            System.arraycopy(data,index,bytes,0,commandLen);
+            SDS sds = new SDS(bytes);
+            result[i] = sds;
+            if (checkCrlf(data, index)) {
+                return null;
+            }
+            index += 2;
+        }
+        return result;
+    }
 
     public static byte[] encode(RedisClient client) {
         if (client == null) {
@@ -32,16 +76,16 @@ public class AofUtil {
             lenTotal += 2;
         }
         byte[] result = new byte[lenTotal];
-        result[0] = '*';
+        result[0] = STAR;
         int index = 1;
         Conversion.intToByteArray(length, 0, result, 1, len);
         for (int j = 0;j < len;j ++) {
-            result[j+index]+='0';
+            result[j+index]+=ZERO_CHAR;
         }
         index = len + 1;
-        result[index]='\r';
+        result[index]=CR;
         index ++;
-        result[index]='\n';
+        result[index]=LF;
         index ++;
         for (int i = 0; i < length; i++) {
             result[index] = '$';
@@ -52,15 +96,15 @@ public class AofUtil {
                 result[j+index]+='0';
             }
             index += lens[i];
-            result[index] = '\r';
+            result[index] = CR;
             index ++;
-            result[index] = '\n';
+            result[index] = LF;
             index ++;
             System.arraycopy(sds.getBytes(),0,result,index,sds.getUsed());
             index += sds.getUsed();
-            result[index] = '\r';
+            result[index] = CR;
             index ++;
-            result[index] = '\n';
+            result[index] = LF;
             index ++;
         }
         return result;

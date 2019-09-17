@@ -7,6 +7,7 @@ import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
 import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.handler.command.RedisCommandEnum;
 import com.jllsq.handler.decoder.RedisObjectDecoder;
 import com.jllsq.handler.decoder.RedisObjectEncoder;
 import com.jllsq.holder.RedisServerDbHolder;
@@ -230,11 +231,23 @@ public class RedisServer {
                 e.printStackTrace();
             }
         }
-//        appendFileName = new SDS("redis.aof");
         if (appendFileName != null) {
             try {
                 RedisAofLog.getInstance().init(appendFileName.getContent());
+                java.util.List<RedisClient> list = RedisAofLog.getInstance().readClient();
+                for (RedisClient client:list) {
+                    client.setDb(RedisServerDbHolder.getInstance().getSelectedDb());
+                    RedisCommand command = RedisCommandEnum.getCommandByKey((SDS) (client.getArgv()[0].getPtr())).getCommand();
+                    RedisObject response = null;
+                    if (command != null) {
+                        response = command.process(client);
+                    } else {
+                        response = Shared.getInstance().getSyntaxerr();
+                    }
+                }
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

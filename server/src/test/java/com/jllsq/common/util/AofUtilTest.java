@@ -31,4 +31,9 @@ public class AofUtilTest {
         Assert.assertEquals(null,AofUtil.encode(null));
         Assert.assertEquals(new String("*3\r\n$3\r\nSET\r\n$1\r\nA\r\n$3\r\n123\r\n"),new String(AofUtil.encode(client1)));
     }
+
+    @Test
+    public void decode() {
+
+    }
 }

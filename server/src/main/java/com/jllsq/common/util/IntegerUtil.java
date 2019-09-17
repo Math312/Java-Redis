@@ -1,10 +1,46 @@
 package com.jllsq.common.util;
 
+import static com.jllsq.config.Constants.*;
+
+/**
+ * @author Yanli Shao
+ */
 public class IntegerUtil {
 
+
+
     public static boolean byteIsInt(byte[] bytes) {
-        for (int i = 0;i < bytes.length;i ++) {
-            if (bytes[i] >= '9' || bytes[i] <= '0'){
+        if (bytes == null || bytes.length == 0) {
+            return false;
+        }
+        int start = 0;
+        if (bytes[0] == SUB){
+            if (bytes.length == 1) {
+                return false;
+            }
+            start = 1;
+        }
+
+        for (int i = start;i < bytes.length;i ++) {
+            if (bytes[i] >= NINE_CHAR || bytes[i] <= ZERO_CHAR){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean byteIsInt(byte[] bytes,int start, int length) {
+        if (bytes == null || bytes.length == 0) {
+            return false;
+        }
+        if (bytes[start] == SUB){
+            if (length == 1) {
+                return false;
+            }
+            start = 1;
+        }
+        for (int i = start;i < length;i ++) {
+            if (bytes[i] >= NINE_CHAR || bytes[i] <= ZERO_CHAR){
                 return false;
             }
         }
@@ -13,11 +49,55 @@ public class IntegerUtil {
 
     public static int intToBytesLength(int num) {
         int index = 1;
-        while (num / 10 != 0) {
+        if (num < 0) {
             index ++;
-            num = num % 10;
+        }
+        while (num / TEN != 0) {
+            index ++;
+            num = num / TEN;
         }
         return index;
+    }
+
+    public static byte[] numToByteArray(int num) {
+        int len = intToBytesLength(num);
+        byte[] result = new byte[len];
+        int start = 0;
+        if (num < 0) {
+            start ++;
+            result[0] = SUB;
+            num = -num;
+        }
+        for (int i = len;i > start;i --) {
+            int temp = num % TEN;
+            result[i-1] = (byte)(temp+ZERO_CHAR);
+            num = num / TEN;
+        }
+        return result;
+    }
+
+    public static int bytesToInt(byte[] bytes,int start,int length) {
+        if (byteIsInt(bytes,start,length)) {
+            int sum = 0;
+            for (int i = 0;i < length;i ++) {
+                sum *= 10;
+                sum += (bytes[start+i]-ZERO_CHAR);
+            }
+            return sum;
+        } else {
+            throw new ClassCastException();
+        }
+    }
+
+    public static int getMaxIntegerLenInBytes(byte[] bytes,int start) {
+        int length = 0;
+        if (start < 0) {
+            throw new IllegalArgumentException();
+        }
+        while(start+length < bytes.length && bytes[start + length] <= NINE_CHAR && bytes[start + length] >= ZERO_CHAR) {
+            length ++;
+        }
+        return length;
     }
 
 }
