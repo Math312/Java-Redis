@@ -9,7 +9,10 @@ import com.jllsq.handler.RedisServerHandler;
 import com.jllsq.handler.command.RedisCommand;
 import com.jllsq.handler.decoder.RedisObjectDecoder;
 import com.jllsq.handler.decoder.RedisObjectEncoder;
+import com.jllsq.holder.RedisServerDbHolder;
+import com.jllsq.holder.RedisServerEventLoopHolder;
 import com.jllsq.holder.RedisServerStateHolder;
+import com.jllsq.log.RedisAofLog;
 import com.jllsq.log.RedisLog;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -20,6 +23,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import com.jllsq.common.list.List;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.Data;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -30,8 +34,6 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
-
-import static com.jllsq.common.entity.RedisObject.REDIS_STRING;
 
 /**
  * @author Math312
@@ -81,15 +83,12 @@ public class RedisServer {
     private static int APPENDFSYNC_EVERYSEC = 2;
 
     private static int REDIS_EXPIRELOOKUPS_PER_CRON = 100;
-
     private String configFileName;
 
     private int cronloops;
     private Date unixTime;
 
     private int port;
-    private RedisDb[] db;
-    private int dbNum;
     private Dict<SDS, Object> sharingPool;
     private List clients;
     private Date lastSave;
@@ -115,7 +114,7 @@ public class RedisServer {
     private int shareObjects;
     private int rdbCompression;
     private FileChannel devnull;
-    private List objFreeList;
+
     private ServerBootstrap b;
     private HashMap<SDS, RedisCommand> redisCommandTable;
 
@@ -124,6 +123,14 @@ public class RedisServer {
     private long maxMemory;
     private Shared shared;
 
+    public RedisServer(String configFileName) {
+        this.configFileName = configFileName;
+    }
+
+    public RedisServer() {
+
+    }
+
     private void start() throws Exception {
         initServerConfig();
         if (this.configFileName != null) {
@@ -131,11 +138,14 @@ public class RedisServer {
             loadServerConfig(this.configFileName);
         }
         initServer();
+        RedisServerEventLoopHolder holder = RedisServerEventLoopHolder.getInstance();
         NioEventLoopGroup group = new NioEventLoopGroup(1);
+        holder.setEventLoopGroup(group);
         try {
             ScheduledFuture<?> scheduledFuture = group.scheduleAtFixedRate(
                     () -> {
                         cronLoops++;
+                        RedisDb[] db = RedisServerDbHolder.getInstance().getDb();
                         RedisServerStateHolder.getInstance().updateUnixTime();
                         for (int i = 0; i < db.length; i++) {
                             int size = db[i].getDict().getSize();
@@ -167,17 +177,23 @@ public class RedisServer {
                                     } else {
                                         long expireTime = (long)(entry.getValue().getPtr());
                                         if (expireTime < time) {
-                                            System.out.println(entry.getKey());
-                                            db[i].getDict().delete(entry.getKey());
-                                            expires.delete(entry.getKey());
+                                            DictEntry<RedisObject,RedisObject> dataEntry = null;
+                                            dataEntry = db[i].getDict().delete(entry.getKey());
+                                            dataEntry.getKey().destructor();
+                                            dataEntry.getValue().destructor();
+                                            dataEntry = expires.delete(entry.getKey());
+                                            dataEntry.getKey().destructor();
+                                            dataEntry.getValue().destructor();
                                             expired ++;
                                         }
                                     }
                                 }
                             } while (expired > REDIS_EXPIRELOOKUPS_PER_CRON / 4);
+
                         }
 
                     }, 0, 1, TimeUnit.SECONDS);
+            holder.setScheduledFuture(scheduledFuture);
             this.b = new ServerBootstrap();
             b.group(group)
                     .channel(NioServerSocketChannel.class)
@@ -189,8 +205,9 @@ public class RedisServer {
                                     .addLast(new RedisObjectDecoder(), new RedisObjectEncoder(), new RedisServerHandler(RedisServer.this));
                         }
                     });
-
+            holder.setBootstrap(b);
             ChannelFuture f = b.bind().sync();
+            holder.setChannelFuture(f);
             RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE,RedisServer.class.getName() + " started and listen on " + f.channel().localAddress());
             f.channel().closeFuture().sync();
         } finally {
@@ -205,11 +222,6 @@ public class RedisServer {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        createShareObjects();
-        this.db = new RedisDb[this.dbNum];
-        for (int i = 0; i < this.dbNum; i++) {
-            this.db[i] = new RedisDb(i);
-        }
         this.cronLoops = 0;
         if (logFile != null) {
             try {
@@ -218,51 +230,17 @@ public class RedisServer {
                 e.printStackTrace();
             }
         }
-    }
-
-    private RedisObject createObject(boolean isShared, byte type, Object ptr) {
-        RedisObject redisObject = null;
-        if (this.objFreeList.length() > 0) {
-            // Get the first node.
-            // Change the data of the node.
-            // Remove the node from objFreeList.
-        } else {
-            redisObject = new RedisObject(isShared, type, ptr);
+//        appendFileName = new SDS("redis.aof");
+        if (appendFileName != null) {
+            try {
+                RedisAofLog.getInstance().init(appendFileName.getContent());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        return redisObject;
     }
 
-    private void createShareObjects() {
-        this.shared = Shared.getInstance();
-        this.shared.setCrlf(createObject(true, REDIS_STRING, new SDS("\r\n")));
-        this.shared.setOk(createObject(true, REDIS_STRING, new SDS("+OK\r\n")));
-        this.shared.setErr(createObject(true, REDIS_STRING, new SDS("-ERR\r\n")));
-        this.shared.setEmptybulk(createObject(true, REDIS_STRING, new SDS("$0\r\n\r\n")));
-        this.shared.setCzero(createObject(true, REDIS_STRING, new SDS(":0\r\n")));
-        this.shared.setCone(createObject(true, REDIS_STRING, new SDS(":1\r\n")));
-        this.shared.setNullbulk(createObject(true, REDIS_STRING, new SDS("$-1\r\n")));
-        this.shared.setNullmultibulk(createObject(true, REDIS_STRING, new SDS("*-1\r\n")));
-        this.shared.setEmptymultibulk(createObject(true, REDIS_STRING, new SDS("*0\r\n")));
-        this.shared.setPong(createObject(true, REDIS_STRING, new SDS("+PONG\r\n")));
-        this.shared.setQueued(createObject(true, REDIS_STRING, new SDS("+QUEUED\r\n")));
-        this.shared.setWrongtypeerr(createObject(true, REDIS_STRING, new SDS("-ERR Operation against a key holding the wrong kind of value\r\n")));
-        this.shared.setNokeyerr(createObject(true, REDIS_STRING, new SDS("-ERR no such key\r\n")));
-        this.shared.setSyntaxerr(createObject(true, REDIS_STRING, new SDS("-ERR syntax error\r\n")));
-        this.shared.setOutofrangeerr(createObject(true, REDIS_STRING, new SDS("-ERR source and destination objects are the same\r\n")));
-        this.shared.setSpace(createObject(true, REDIS_STRING, new SDS(" ")));
-        this.shared.setColon(createObject(true, REDIS_STRING, new SDS(":")));
-        this.shared.setPlus(createObject(true, REDIS_STRING, new SDS("+")));
-        this.shared.setSelect0(createObject(true, REDIS_STRING, new SDS("select 0\r\n")));
-        this.shared.setSelect1(createObject(true, REDIS_STRING, new SDS("select 1\r\n")));
-        this.shared.setSelect2(createObject(true, REDIS_STRING, new SDS("select 2\r\n")));
-        this.shared.setSelect3(createObject(true, REDIS_STRING, new SDS("select 3\r\n")));
-        this.shared.setSelect4(createObject(true, REDIS_STRING, new SDS("select 4\r\n")));
-        this.shared.setSelect5(createObject(true, REDIS_STRING, new SDS("select 5\r\n")));
-        this.shared.setSelect6(createObject(true, REDIS_STRING, new SDS("select 6\r\n")));
-        this.shared.setSelect7(createObject(true, REDIS_STRING, new SDS("select 7\r\n")));
-        this.shared.setSelect8(createObject(true, REDIS_STRING, new SDS("select 8\r\n")));
-        this.shared.setSelect9(createObject(true, REDIS_STRING, new SDS("select 9\r\n")));
-    }
+
 
     private void loadServerConfig(String configFileName) {
         Path path = Paths.get(configFileName);
@@ -309,12 +287,16 @@ public class RedisServer {
                             File file = new File(config[1]);
                             FileOutputStream fileOutputStream = new FileOutputStream(file);
                             fileOutputStream.close();
+                            this.logFile = new SDS(config[1]);
                         }
                     } else if (config[0].equals(DATABASES) && config.length == 2) {
-                        this.dbNum = Integer.parseInt(config[1]);
-                        if (this.dbNum < 1) {
+
+                        int dbNum = Integer.parseInt(config[1]);
+                        if (dbNum < 1) {
                             throw new RuntimeException();
                         }
+                        RedisServerDbHolder.getInstance().setDbNum(Integer.parseInt(config[1])); ;
+
                     } else if (config[0].equals(MAX_CLIENTS) && config.length == 2) {
                         this.maxClients = Integer.parseInt(config[1]);
                     } else if (config[0].equals(MAX_MEMORY) && config.length == 2) {
@@ -373,7 +355,6 @@ public class RedisServer {
 
     private void initServerConfig() {
         this.stateStartTime = new Date();
-        this.dbNum = REDIS_DEFAULT_DBNUM;
         this.port = REDIS_SERVERPORT;
         this.verbosity = REDIS_VERBOSE;
         this.maxIdleTime = REDIS_MAXIDLETIME;
@@ -393,14 +374,20 @@ public class RedisServer {
         this.rdbCompression = 1;
         this.maxClients = 0;
         this.maxMemory = 0;
-        this.objFreeList = new List();
 
         resetServerSaveParams();
         appendDefaultServerSaveParams();
     }
 
     public static void main(String[] args) throws Exception {
-        new RedisServer().start();
+        if (args.length == 1) {
+            new RedisServer(args[0]).start();
+        } else if (args.length == 0) {
+            new RedisServer().start();
+        } else {
+            System.err.println("Usage: java -jar server-1.0-SNAPSHOT.jar [/path/to/redis.conf]\n ");
+        }
+
     }
 
     private void resetServerSaveParams() {

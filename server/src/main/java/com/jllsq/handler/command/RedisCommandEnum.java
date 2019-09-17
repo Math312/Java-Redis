@@ -7,14 +7,14 @@ public enum RedisCommandEnum {
 
     GET_COMMAND(new SDS("get"),new GetCommand()),
     SET_COMMAND(new SDS("set"),new SetCommand()),
+    DEL_COMMAND(new SDS("del"),new DelCommand()),
     EXPIRE_COMMAND(new SDS("expire"),new ExpireCommand()),
     EXISTS_COMMAND(new SDS("exists"),new ExistsCommand()),
     COMMAND_COMMAND(new SDS("command"),new CommandCommand()),
     APPEND_COMMAND(new SDS("append"),new AppendCommand()),
     TTL_COMMAND(new SDS("ttl"),new TtlCommand()),
     PING_COMMAND(new SDS("ping"),new PingCommand()),
-    AUTH_COMMAND(new SDS("auth"),new AuthCommand()),
-    SHUTDOWN_COMMAND(new SDS("shutdown"),new ShutdownCommand());
+    AUTH_COMMAND(new SDS("auth"),new AuthCommand());
 
     private SDS key;
     private RedisCommand command;

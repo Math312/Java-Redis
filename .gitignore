@@ -8,3 +8,6 @@
 ./settings
 application.pid
 redis.log
+./target/*
+*.aof
+*.conf

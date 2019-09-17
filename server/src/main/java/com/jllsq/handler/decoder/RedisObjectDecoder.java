@@ -3,6 +3,7 @@ package com.jllsq.handler.decoder;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
+import com.jllsq.holder.RedisServerObjectHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -10,10 +11,13 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
+
 public class RedisObjectDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        RedisServerObjectHolder holder = RedisServerObjectHolder.getInstance();
         if (in.isReadable()){
             RedisClient client = new RedisClient();
             if (in.readByte() != '*') {
@@ -40,7 +44,7 @@ public class RedisObjectDecoder extends ByteToMessageDecoder {
                 ByteBuf command = in.readBytes(commandLen);
                 byte[] buff = new byte[commandLen];
                 command.getBytes(0,buff);
-                argv[i] = new RedisObject(false,RedisObject.REDIS_STRING,new SDS(buff));
+                argv[i] = holder.createObject(false,REDIS_STRING,new SDS(buff));
                 ByteBuf nextLine = in.readBytes(2);
             }
             client.setDictId(0);

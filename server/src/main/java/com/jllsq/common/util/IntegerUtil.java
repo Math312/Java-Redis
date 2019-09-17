@@ -11,4 +11,13 @@ public class IntegerUtil {
         return true;
     }
 
+    public static int intToBytesLength(int num) {
+        int index = 1;
+        while (num / 10 != 0) {
+            index ++;
+            num = num % 10;
+        }
+        return index;
+    }
+
 }

@@ -10,6 +10,9 @@ import com.jllsq.config.Shared;
 import com.jllsq.handler.command.RedisCommand;
 import com.jllsq.holder.RedisServerStateHolder;
 
+import static com.jllsq.holder.RedisServerObjectHolder.REDIS_ENCODING_INT;
+import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
+
 public class TtlCommand  extends RedisCommand {
 
 
@@ -30,7 +33,7 @@ public class TtlCommand  extends RedisCommand {
                 result = Shared.getInstance().getNullbulk();
             }else {
                 long ttl = ((long)(entry.getValue().getPtr()) - RedisServerStateHolder.getInstance().getUnixTime()) / 1000;
-                result = new RedisObject(false,RedisObject.REDIS_STRING,ttl,RedisObject.REDIS_ENCODING_INT);
+                result = new RedisObject(false,REDIS_STRING,ttl,REDIS_ENCODING_INT);
             }
         }
         return result;
