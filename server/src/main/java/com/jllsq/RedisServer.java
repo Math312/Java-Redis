@@ -83,7 +83,6 @@ public class RedisServer {
     private static int APPENDFSYNC_EVERYSEC = 2;
 
     private static int REDIS_EXPIRELOOKUPS_PER_CRON = 100;
-
     private String configFileName;
 
     private int cronloops;
@@ -123,6 +122,14 @@ public class RedisServer {
     private int maxClients;
     private long maxMemory;
     private Shared shared;
+
+    public RedisServer(String configFileName) {
+        this.configFileName = configFileName;
+    }
+
+    public RedisServer() {
+
+    }
 
     private void start() throws Exception {
         initServerConfig();
@@ -223,7 +230,7 @@ public class RedisServer {
                 e.printStackTrace();
             }
         }
-        appendFileName = new SDS("redis.aof");
+//        appendFileName = new SDS("redis.aof");
         if (appendFileName != null) {
             try {
                 RedisAofLog.getInstance().init(appendFileName.getContent());
@@ -280,6 +287,7 @@ public class RedisServer {
                             File file = new File(config[1]);
                             FileOutputStream fileOutputStream = new FileOutputStream(file);
                             fileOutputStream.close();
+                            this.logFile = new SDS(config[1]);
                         }
                     } else if (config[0].equals(DATABASES) && config.length == 2) {
 
@@ -372,7 +380,14 @@ public class RedisServer {
     }
 
     public static void main(String[] args) throws Exception {
-        new RedisServer().start();
+        if (args.length == 1) {
+            new RedisServer(args[0]).start();
+        } else if (args.length == 0) {
+            new RedisServer().start();
+        } else {
+            System.err.println("Usage: java -jar server-1.0-SNAPSHOT.jar [/path/to/redis.conf]\n ");
+        }
+
     }
 
     private void resetServerSaveParams() {
