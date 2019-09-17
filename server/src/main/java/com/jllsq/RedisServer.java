@@ -36,6 +36,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import static com.jllsq.log.RedisLog.*;
+
 /**
  * @author Math312
  * */
@@ -61,16 +63,6 @@ public class RedisServer {
     private static String REQUIRE_PASS = "requirepass";
     private static String PID_FILE = "pidfile";
     private static String DB_FILE_NAME = "dbfilename";
-
-    private static String LOG_LEVEL_DEBUG_STR = "debug";
-    private static String LOG_LEVEL_VERBOSE_STR = "verbose";
-    private static String LOG_LEVEL_NOTICE_STR = "notice";
-    private static String LOG_LEVEL_WARNING_STR = "warning";
-
-    private static int LOG_LEVEL_DEBUG = 0;
-    private static int LOG_LEVEL_VERBOSE = 1;
-    private static int LOG_LEVEL_NOTICE = 2;
-    private static int LOG_LEVEL_WARNING = 3;
 
     private static String STDOUT = "stdout";
 

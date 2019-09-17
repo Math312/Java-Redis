@@ -4,12 +4,12 @@ import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.common.util.AofUtil;
+import com.jllsq.common.util.BasicFileWriter;
 import com.jllsq.holder.RedisServerObjectHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.*;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -22,14 +22,18 @@ import static com.jllsq.common.util.config.ByteBufUtil.readLine;
 import static com.jllsq.config.Constants.*;
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
-public class RedisAofLog {
-
-    private String logFile;
+/**
+ * @author yanlishao
+ */
+public class RedisAofLog extends BasicFileWriter {
 
     private RedisAofLog() {
     }
 
     enum RedisAofLogEnum {
+        /**
+         * RedisAofLog singleton implementation
+         * */
         INSTANCE;
 
         RedisAofLogEnum() {
@@ -41,13 +45,6 @@ public class RedisAofLog {
 
     public static RedisAofLog getInstance() {
         return RedisAofLogEnum.INSTANCE.redisAofLog;
-    }
-
-    public void init(String logFile) throws IOException {
-            File file = new File(logFile);
-            if (file.canWrite()) {
-                this.logFile = logFile;
-            }
     }
 
     public void write(RedisClient client) throws IOException {
@@ -94,6 +91,9 @@ public class RedisAofLog {
                 command.getBytes(0, buff);
                 argv[i] = holder.createObject(false, REDIS_STRING, new SDS(buff));
                 ByteBuf nextLine = in.readBytes(2);
+                if (nextLine.getByte(0) != CR || nextLine.getByte(1) != LF) {
+                    System.out.println("error");
+                }
             }
             client.setDictId(0);
             client.setArgc(length);
