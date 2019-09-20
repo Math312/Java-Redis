@@ -1,4 +1,4 @@
-package com.jllsq.common.util;
+package com.jllsq.common;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +13,11 @@ public class BasicFileWriter {
     public boolean init(String logFile) throws IOException {
         File file = new File(logFile);
         if (!file.exists()) {
-            return file.createNewFile();
+            if (file.createNewFile()) {
+                this.logFile = logFile;
+                return true;
+            }
+            return false;
         }
         if (file.canWrite() && file.canRead()) {
             this.logFile = logFile;

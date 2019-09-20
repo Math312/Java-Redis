@@ -15,6 +15,7 @@ public class ByteArrayUtil {
             if (array[i]>='0' && array[i] <= '9'){
                 num = array[i]-'0';
             }else {
+                System.out.println(array[i]);
                 throw new Exception();
             }
             result = result*10+num;

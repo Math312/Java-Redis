@@ -9,6 +9,7 @@ public enum RedisCommandEnum {
     SET_COMMAND(new SDS("set"),new SetCommand()),
     DEL_COMMAND(new SDS("del"),new DelCommand()),
     EXPIRE_COMMAND(new SDS("expire"),new ExpireCommand()),
+    EXPIREAT_COMMAND(new SDS("expireat"),new ExpireatCommand()),
     EXISTS_COMMAND(new SDS("exists"),new ExistsCommand()),
     COMMAND_COMMAND(new SDS("command"),new CommandCommand()),
     APPEND_COMMAND(new SDS("append"),new AppendCommand()),

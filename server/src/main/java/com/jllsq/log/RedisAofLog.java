@@ -4,7 +4,8 @@ import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.common.util.AofUtil;
-import com.jllsq.common.util.BasicFileWriter;
+import com.jllsq.common.BasicFileWriter;
+import com.jllsq.handler.command.RedisCommandEnum;
 import com.jllsq.holder.RedisServerObjectHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -20,7 +21,7 @@ import java.util.List;
 import static com.jllsq.common.util.config.ByteArrayUtil.byteArrayToInt;
 import static com.jllsq.common.util.config.ByteBufUtil.readLine;
 import static com.jllsq.config.Constants.*;
-import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
+import static com.jllsq.holder.RedisServerObjectHolder.*;
 
 /**
  * @author yanlishao
@@ -54,6 +55,25 @@ public class RedisAofLog extends BasicFileWriter {
         }
     }
 
+    public void applyAofLog(RedisClient client) throws IOException {
+        if (client.getArgv().length > 0) {
+            RedisObject commandObject = client.getArgv()[0];
+            SDS commandSds = (SDS)(commandObject.getPtr());
+            if (commandSds.equals(RedisCommandEnum.EXPIRE_COMMAND.getCommand().getName())) {
+                RedisObject object = client.getArgv()[2];
+                long expires = (long) object.getPtr();
+                object.setPtr(new SDS(expires+""));
+                object.setShared(false);
+                object.setEncoding(REDIS_ENCODING_RAW);
+                commandSds = new SDS("expireat");
+                commandObject.setPtr(commandSds);
+                write(client);
+            }else {
+                write(client);
+            }
+        }
+    }
+
     public List<RedisClient> readClient() throws Exception {
         byte[] bytes = Files.readAllBytes(Paths.get(logFile));
         ByteBuf byteBuf = Unpooled.copiedBuffer(bytes);
@@ -81,10 +101,10 @@ public class RedisAofLog extends BasicFileWriter {
                     System.out.println("error");
                 }
                 byte[] commandArgv = readLine(in);
-                if (head[head.length - 2] != CR || head[head.length - 1] != LF) {
+                if (commandArgv[commandArgv.length - 2] != CR || commandArgv[commandArgv.length - 1] != LF) {
                     System.out.println("error");
                 }
-                num = Arrays.copyOf(commandArgv, head.length - 2);
+                num = Arrays.copyOf(commandArgv, commandArgv.length - 2);
                 int commandLen = byteArrayToInt(num);
                 ByteBuf command = in.readBytes(commandLen);
                 byte[] buff = new byte[commandLen];

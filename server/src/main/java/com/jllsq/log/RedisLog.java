@@ -1,6 +1,6 @@
 package com.jllsq.log;
 
-import com.jllsq.common.util.BasicFileWriter;
+import com.jllsq.common.BasicFileWriter;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;

@@ -42,7 +42,7 @@ public class RedisServerHandler extends ChannelInboundHandlerAdapter {
         }
         if (RedisServerStateHolder.getInstance().getDirty() != dirty) {
             try {
-                RedisAofLog.getInstance().write(client);
+                RedisAofLog.getInstance().applyAofLog(client);
             } catch (IOException e) {
                 e.printStackTrace();
             }

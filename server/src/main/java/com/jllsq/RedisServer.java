@@ -225,16 +225,14 @@ public class RedisServer {
         }
         if (appendFileName != null) {
             try {
-                RedisAofLog.getInstance().init(appendFileName.getContent());
-                java.util.List<RedisClient> list = RedisAofLog.getInstance().readClient();
-                for (RedisClient client:list) {
-                    client.setDb(RedisServerDbHolder.getInstance().getSelectedDb());
-                    RedisCommand command = RedisCommandEnum.getCommandByKey((SDS) (client.getArgv()[0].getPtr())).getCommand();
-                    RedisObject response = null;
-                    if (command != null) {
-                        response = command.process(client);
-                    } else {
-                        response = Shared.getInstance().getSyntaxerr();
+                if (RedisAofLog.getInstance().init(appendFileName.getContent())) {
+                    java.util.List<RedisClient> list = RedisAofLog.getInstance().readClient();
+                    for (RedisClient client:list) {
+                        client.setDb(RedisServerDbHolder.getInstance().getSelectedDb());
+                        RedisCommand command = RedisCommandEnum.getCommandByKey((SDS) (client.getArgv()[0].getPtr())).getCommand();
+                        if (command != null) {
+                            command.process(client);
+                        }
                     }
                 }
             } catch (IOException e) {

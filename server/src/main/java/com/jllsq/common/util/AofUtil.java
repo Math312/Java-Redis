@@ -78,10 +78,7 @@ public class AofUtil {
         byte[] result = new byte[lenTotal];
         result[0] = STAR;
         int index = 1;
-        Conversion.intToByteArray(length, 0, result, 1, len);
-        for (int j = 0;j < len;j ++) {
-            result[j+index]+=ZERO_CHAR;
-        }
+        LongUtils.longToBytes(length, 0, result, 1, len);
         index = len + 1;
         result[index]=CR;
         index ++;
@@ -91,10 +88,7 @@ public class AofUtil {
             result[index] = '$';
             index++;
             SDS sds = ((SDS) (client.getArgv()[i].getPtr()));
-            Conversion.intToByteArray(sds.getUsed(), 0, result, index, lens[i]);
-            for (int j = 0;j < lens[i];j ++) {
-                result[j+index]+='0';
-            }
+            LongUtils.longToBytes(sds.getUsed(), 0, result, index, lens[i]);
             index += lens[i];
             result[index] = CR;
             index ++;

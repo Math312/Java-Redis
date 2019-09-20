@@ -218,4 +218,9 @@ public class SDS implements RedisClonable, Comparable<SDS> {
         }
         return 0;
     }
+
+    @Override
+    public String toString() {
+        return getContent();
+    }
 }
