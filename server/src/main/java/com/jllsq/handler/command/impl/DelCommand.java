@@ -12,7 +12,7 @@ import com.jllsq.holder.RedisServerStateHolder;
 public class DelCommand extends RedisCommand {
 
     public DelCommand() {
-        super(new SDS("DEL"),-1);
+        super(new SDS("DEL"),1);
     }
 
     @Override

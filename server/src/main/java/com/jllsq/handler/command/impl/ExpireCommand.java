@@ -18,7 +18,7 @@ import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 public class ExpireCommand extends RedisCommand {
 
     public ExpireCommand() {
-        super(new SDS("expire"),1);
+        super(new SDS("expire"),2);
     }
 
     @Override
