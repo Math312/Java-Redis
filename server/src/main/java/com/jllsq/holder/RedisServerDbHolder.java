@@ -11,6 +11,7 @@ public class RedisServerDbHolder {
     private RedisDb db[];
     private int dbNum;
     private List objFreeList;
+    private RedisDb selectedDb;
 
     public RedisDb[] getDb() {
         return db;
@@ -35,6 +36,7 @@ public class RedisServerDbHolder {
         for (int i = 0; i < this.dbNum; i++) {
             this.db[i] = new RedisDb(i);
         }
+        this.selectedDb = this.db[0];
     }
 
     public static RedisServerDbHolder getInstance() {
@@ -57,5 +59,9 @@ public class RedisServerDbHolder {
 
     public void rdbSave(String fileName) {
 
+    }
+
+    public RedisDb getSelectedDb() {
+        return selectedDb;
     }
 }

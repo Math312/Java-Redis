@@ -1,8 +1,7 @@
 package com.jllsq.log;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import com.jllsq.common.BasicFileWriter;
+
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
@@ -10,9 +9,28 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
 
-public class RedisLog {
+
+/**
+ * @author yanlishao
+ */
+public class RedisLog extends BasicFileWriter {
+
+    public static String LOG_LEVEL_DEBUG_STR = "debug";
+    public static String LOG_LEVEL_VERBOSE_STR = "verbose";
+    public static String LOG_LEVEL_NOTICE_STR = "notice";
+    public static String LOG_LEVEL_WARNING_STR = "warning";
+
+    public static final int LOG_LEVEL_DEBUG = 0;
+    public static final int LOG_LEVEL_VERBOSE = 1;
+    public static final int LOG_LEVEL_NOTICE = 2;
+    public static final int LOG_LEVEL_WARNING = 3;
+
+    private static final String LOG_FORMAT = "Time: %s - Pid: %s - [ %s ] - %s \r\n";
 
     enum  RedisLogEnum{
+        /**
+         * RedisLog singleton implementation.
+         * */
         INSTANCE;
 
         RedisLogEnum() {
@@ -26,41 +44,7 @@ public class RedisLog {
         return RedisLogEnum.INSTANCE.redisLog;
     }
 
-    private String logFile;
-
-    public static String LOG_LEVEL_DEBUG_STR = "debug";
-    public static String LOG_LEVEL_VERBOSE_STR = "verbose";
-    public static String LOG_LEVEL_NOTICE_STR = "notice";
-    public static String LOG_LEVEL_WARNING_STR = "warning";
-
-    public static final int LOG_LEVEL_DEBUG = 0;
-    public static final int LOG_LEVEL_VERBOSE = 1;
-    public static final int LOG_LEVEL_NOTICE = 2;
-    public static final int LOG_LEVEL_WARNING = 3;
-
-    public static final String LOG_FORMAT = "Time: %s - Pid: %s - [ %s ] - %s \r\n";
-
     private RedisLog() {
-    }
-
-    public void init(String logFile) throws IOException {
-        try {
-            FileOutputStream output = new FileOutputStream(logFile);
-            output.close();
-            this.logFile = logFile;
-        } catch (FileNotFoundException e) {
-            File file = new File(logFile);
-            try {
-                if (file.createNewFile()){
-
-                } else {
-                    throw new IOException();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                throw new IOException();
-            }
-        }
     }
 
     public void log(int level, String ... logs) throws IOException {
@@ -78,7 +62,6 @@ public class RedisLog {
         log(level,data);
     }
 
-    /* todo Use the RedisServer's unixTime */
     private String getDate() {
         return new Date().toString();
     }

@@ -7,6 +7,7 @@ import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
 import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.handler.command.RedisCommandEnum;
 import com.jllsq.handler.decoder.RedisObjectDecoder;
 import com.jllsq.handler.decoder.RedisObjectEncoder;
 import com.jllsq.holder.RedisServerDbHolder;
@@ -35,6 +36,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import static com.jllsq.log.RedisLog.*;
+
 /**
  * @author Math312
  * */
@@ -60,16 +63,6 @@ public class RedisServer {
     private static String REQUIRE_PASS = "requirepass";
     private static String PID_FILE = "pidfile";
     private static String DB_FILE_NAME = "dbfilename";
-
-    private static String LOG_LEVEL_DEBUG_STR = "debug";
-    private static String LOG_LEVEL_VERBOSE_STR = "verbose";
-    private static String LOG_LEVEL_NOTICE_STR = "notice";
-    private static String LOG_LEVEL_WARNING_STR = "warning";
-
-    private static int LOG_LEVEL_DEBUG = 0;
-    private static int LOG_LEVEL_VERBOSE = 1;
-    private static int LOG_LEVEL_NOTICE = 2;
-    private static int LOG_LEVEL_WARNING = 3;
 
     private static String STDOUT = "stdout";
 
@@ -230,11 +223,21 @@ public class RedisServer {
                 e.printStackTrace();
             }
         }
-//        appendFileName = new SDS("redis.aof");
         if (appendFileName != null) {
             try {
-                RedisAofLog.getInstance().init(appendFileName.getContent());
+                if (RedisAofLog.getInstance().init(appendFileName.getContent())) {
+                    java.util.List<RedisClient> list = RedisAofLog.getInstance().readClient();
+                    for (RedisClient client:list) {
+                        client.setDb(RedisServerDbHolder.getInstance().getSelectedDb());
+                        RedisCommand command = RedisCommandEnum.getCommandByKey((SDS) (client.getArgv()[0].getPtr())).getCommand();
+                        if (command != null) {
+                            command.process(client);
+                        }
+                    }
+                }
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
