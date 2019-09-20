@@ -7,14 +7,16 @@ import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.holder.RedisServerObjectHolder;
 import com.jllsq.holder.RedisServerStateHolder;
 
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_ENCODING_INT;
+import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
 public class ExpireatCommand extends RedisCommand {
 
     public ExpireatCommand() {
-        super(new SDS("expireat"), 1);
+        super(new SDS("expireat"), 2);
     }
 
     @Override
@@ -28,16 +30,14 @@ public class ExpireatCommand extends RedisCommand {
             DictEntry<RedisObject, RedisObject> expireEntry = db.getExpires().find(client.getArgv()[1]);
             RedisObject object = client.getArgv()[2];
             long expires = Long.parseLong(((SDS)(object.getPtr())).getContent());
-            object.setEncoding(REDIS_ENCODING_INT);
-            object.setPtr(expires);
+            RedisObject expiresObject = RedisServerObjectHolder.getInstance().createObject(false,REDIS_STRING,expires,REDIS_ENCODING_INT);
             if (expireEntry == null) {
-                db.getExpires().add(client.getArgv()[1],client.getArgv()[2]);
+                db.getExpires().add(client.getArgv()[1],expiresObject);
             } else {
-                expireEntry.setValue(client.getArgv()[2]);
+                expireEntry.setValue(expiresObject);
             }
             RedisServerStateHolder.getInstance().incrDirty();
             result = Shared.getInstance().getCone();
-            RedisServerStateHolder.getInstance().incrDirty();
         }
         return result;
     }
