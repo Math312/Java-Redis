@@ -38,7 +38,7 @@ public class ExpireCommand extends RedisCommand {
             if (expireEntry == null) {
                 db.getExpires().add(client.getArgv()[1],expiresObject);
             } else {
-                expireEntry.setValue(client.getArgv()[2]);
+                expireEntry.setValue(expiresObject);
             }
             RedisServerStateHolder.getInstance().incrDirty();
             result = Shared.getInstance().getCone();
