@@ -15,7 +15,7 @@ public class SDSUtils {
             return false;
         }
         byte[] bytes = sds.getBytes();
-        return ByteUtil.bytesIsLong(bytes);
+        return ByteUtil.bytesIsLong(bytes,sds.getUsed());
     }
 
 }

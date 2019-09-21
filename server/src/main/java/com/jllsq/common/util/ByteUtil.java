@@ -19,4 +19,20 @@ public class ByteUtil {
         }
         return true;
     }
+
+    public static boolean bytesIsLong(byte[] bytes,int length) {
+        if (bytes == null || bytes.length == 0 || length == 0) {
+            return false;
+        }
+        int start = 0;
+        if (bytes[0] == SUB) {
+            start = 1;
+        }
+        for (int i = start;i < length;i ++) {
+            if (bytes[i] > NINE_CHAR || bytes[i] < ZERO_CHAR){
+                return false;
+            }
+        }
+        return true;
+    }
 }
