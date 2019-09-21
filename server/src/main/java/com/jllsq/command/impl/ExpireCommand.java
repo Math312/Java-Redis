@@ -50,6 +50,7 @@ public class ExpireCommand extends RedisCommand {
         super.initChain();
         handlerChain.add(new RedisCommandInitClientHandler());
         handlerChain.add(new RedisCommandCheckParamNumsHandler());
+        handlerChain.add(new CommonLongParamCheckHandler());
         handlerChain.add(new RedisCommandAofHandler());
         handlerChain.add(new RedisCommandProcessHandler());
     }

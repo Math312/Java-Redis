@@ -13,7 +13,7 @@ public class ByteUtil {
             start = 1;
         }
         for (int i = start;i < bytes.length;i ++) {
-            if (bytes[i] > NINE_CHAR && bytes[i] < ZERO_CHAR){
+            if (bytes[i] > NINE_CHAR || bytes[i] < ZERO_CHAR){
                 return false;
             }
         }
