@@ -208,11 +208,13 @@ public class RedisServer {
     }
 
     private void initServer() {
-        File file = new File("/dev/null");
-        try {
-            this.devnull = new FileOutputStream(file).getChannel();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        if (System.getProperty("os.name").equals("Linux")) {
+            File file = new File("/dev/null");
+            try {
+                this.devnull = new FileOutputStream(file).getChannel();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
         this.cronLoops = 0;
         if (appendFileName != null) {
