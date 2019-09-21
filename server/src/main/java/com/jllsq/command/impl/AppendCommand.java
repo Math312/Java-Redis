@@ -1,4 +1,4 @@
-package com.jllsq.handler.command.impl;
+package com.jllsq.command.impl;
 
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
@@ -7,25 +7,22 @@ import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.common.sds.exception.SDSMaxLengthException;
 import com.jllsq.config.Shared;
-import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.command.RedisCommand;
+import com.jllsq.command.RedisExpireCheckCommand;
 import com.jllsq.holder.RedisServerStateHolder;
 
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
-public class AppendCommand extends RedisCommand {
+public class AppendCommand extends RedisExpireCheckCommand {
 
     public AppendCommand() {
         super(new SDS("append"),2);
     }
 
     @Override
-    public RedisObject process(RedisClient client) {
+    public RedisObject processing(RedisClient client) {
         RedisDb db = client.getDb();
         RedisObject result = null;
-        if (expireIfNeed(db,client.getArgv()[1])) {
-            result = Shared.getInstance().getNokeyerr();
-            return result;
-        }
         DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
         if (entry == null) {
             boolean addResult = db.getDict().add(client.getArgv()[1], client.getArgv()[2]);
@@ -49,7 +46,11 @@ public class AppendCommand extends RedisCommand {
                 }
                 return entry.getValue();
             }
-
         }
+    }
+
+    @Override
+    public RedisObject getExpireKey(RedisClient client) {
+        return client.getArgv()[1];
     }
 }

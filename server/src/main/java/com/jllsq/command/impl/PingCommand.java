@@ -1,10 +1,10 @@
-package com.jllsq.handler.command.impl;
+package com.jllsq.command.impl;
 
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
-import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.command.RedisCommand;
 
 public class PingCommand extends RedisCommand {
 
@@ -13,7 +13,7 @@ public class PingCommand extends RedisCommand {
     }
 
     @Override
-    public RedisObject process(RedisClient client) {
+    public RedisObject processing(RedisClient client) {
         return Shared.getInstance().getPong();
     }
 }

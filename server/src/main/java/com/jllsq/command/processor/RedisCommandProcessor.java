@@ -1,14 +1,13 @@
-package com.jllsq.handler.processor;
+package com.jllsq.command.processor;
 
 import com.jllsq.common.entity.RedisClient;
-import com.jllsq.common.entity.RedisObject;
-import com.jllsq.common.sds.SDS;
-import com.jllsq.config.Shared;
-import com.jllsq.handler.command.RedisCommandEnum;
 
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author yanlishao
+ */
 public abstract class RedisCommandProcessor{
 
     public abstract boolean preHandle(RedisClient client, Map<String,Object> shared);

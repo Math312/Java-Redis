@@ -1,9 +1,9 @@
-package com.jllsq.handler.command.impl;
+package com.jllsq.command.impl;
 
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;
-import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.command.RedisCommand;
 
 public class AuthCommand extends RedisCommand {
 
@@ -12,7 +12,7 @@ public class AuthCommand extends RedisCommand {
     }
 
     @Override
-    public RedisObject process(RedisClient client) {
+    public RedisObject processing(RedisClient client) {
         return null;
     }
 }
