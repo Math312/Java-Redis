@@ -1,6 +1,7 @@
 package com.jllsq.command.processor.impl;
 
 import com.jllsq.command.RedisCommand;
+import com.jllsq.command.RedisCommandClientHandlerChain;
 import com.jllsq.command.RedisCommandEnum;
 import com.jllsq.command.processor.RedisCommandProcessor;
 import com.jllsq.common.entity.RedisClient;
@@ -14,50 +15,18 @@ import com.jllsq.log.RedisAofLog;
 import java.io.IOException;
 import java.util.Map;
 
-public class BasicRedisCommandProcessor extends RedisCommandProcessor {
+public class BasicRedisCommandProcessor implements RedisCommandProcessor {
 
     @Override
-    public boolean preHandle(RedisClient client, Map<String, Object> shared) {
-        int dirty = RedisServerStateHolder.getInstance().getDirty();
-        client.setDb(RedisServerDbHolder.getInstance().getDb()[client.getDictId()]);
-        shared.put("dirty",dirty);
-        return true;
-    }
-
-    @Override
-    public Object afterComplete(RedisClient client, Map<String, Object> shared) {
-        int dirty = (int) shared.get("dirty");
-        if (RedisServerStateHolder.getInstance().getDirty() != dirty) {
-            try {
-                RedisAofLog.getInstance().applyAofLog(client);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return shared.get("response");
-    }
-
-    @Override
-    public boolean processing(RedisClient client, Map<String, Object> shared) {
+    public RedisObject process(RedisClient client) {
         RedisCommandEnum commandEnum = RedisCommandEnum.getCommandByKey((SDS) (client.getArgv()[0].getPtr()));
-        RedisObject response = null;
         if (commandEnum != null) {
-            if (checkCommandArgsNum(client,commandEnum.getCommand())) {
-                response = commandEnum.getCommand().process(client);
-            } else {
-                response = Shared.getInstance().getSyntaxerr();
-            }
+            RedisCommand command = commandEnum.getCommand();
+            RedisCommandClientHandlerChain chain = command.getHandlerChain();
+            chain.init();
+            return chain.doHandle(client,command);
         } else {
-            response = Shared.getInstance().getSyntaxerr();
+            return Shared.getInstance().getSyntaxerr();
         }
-        shared.put("response",response);
-        return true;
-    }
-
-    private boolean checkCommandArgsNum(RedisClient client, RedisCommand command) {
-        if (client.getArgc() == command.getArity()+1){
-            return true;
-        }
-        return false;
     }
 }

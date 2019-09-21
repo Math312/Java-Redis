@@ -1,5 +1,6 @@
 package com.jllsq.command.impl;
 
+import com.jllsq.command.handler.impl.*;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
@@ -16,7 +17,7 @@ public class DelCommand extends RedisCommand {
     }
 
     @Override
-    public RedisObject processing(RedisClient client) {
+    public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
         DictEntry<RedisObject,RedisObject> dataEntry = null;
         if ((dataEntry = db.getDict().delete(client.getArgv()[1]))!= null ) {
@@ -30,5 +31,14 @@ public class DelCommand extends RedisCommand {
             return Shared.getInstance().getNokeyerr();
         }
         return Shared.getInstance().getOk();
+    }
+
+    @Override
+    public void initChain() {
+        super.initChain();
+        handlerChain.add(new RedisCommandInitClientHandler());
+        handlerChain.add(new RedisCommandCheckParamNumsHandler());
+        handlerChain.add(new RedisCommandAofHandler());
+        handlerChain.add(new RedisCommandProcessHandler());
     }
 }

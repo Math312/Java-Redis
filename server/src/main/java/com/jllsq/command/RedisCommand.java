@@ -1,5 +1,6 @@
 package com.jllsq.command;
 
+import com.jllsq.command.handler.RedisCommandClientHandler;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
@@ -9,8 +10,13 @@ import com.jllsq.config.Shared;
 import com.jllsq.holder.RedisServerStateHolder;
 import lombok.Data;
 
+import java.util.LinkedList;
+import java.util.List;
+
 @Data
 public abstract class RedisCommand {
+
+    protected RedisCommandClientHandlerChain handlerChain;
 
     private SDS name;
     private int arity;
@@ -18,33 +24,10 @@ public abstract class RedisCommand {
     public RedisCommand(SDS name, int arity) {
         this.name = name;
         this.arity = arity;
+        initChain();
     }
 
-    public boolean checkParameter(RedisClient client) {
-        if(client.getArgc() != client.getArgv().length) {
-            return false;
-        }
-        return true;
-    }
-
-    public RedisObject process(RedisClient client) {
-        RedisObject response = null;
-        if (checkParameter(client)) {
-            if ((response = beforeProcessing(client)) != null) {
-                return response;
-            }
-            response = processing(client);
-        } else {
-            response = Shared.getInstance().getSyntaxerr();
-        }
-        return response;
-    }
-
-    public RedisObject beforeProcessing(RedisClient client){
-        return null;
-    }
-
-    public abstract RedisObject processing(RedisClient client);
+    public abstract RedisObject process(RedisClient client);
 
     public boolean expireIfNeed(RedisDb db,RedisObject key) {
         long time = RedisServerStateHolder.getInstance().getUnixTime();
@@ -64,5 +47,9 @@ public abstract class RedisCommand {
             }
             return false;
         }
+    }
+
+    public void initChain() {
+        this.handlerChain = new RedisCommandClientHandlerChain();
     }
 }

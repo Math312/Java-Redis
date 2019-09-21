@@ -1,5 +1,6 @@
 package com.jllsq.command.impl;
 
+import com.jllsq.command.handler.impl.*;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
@@ -20,7 +21,7 @@ public class ExpireCommand extends RedisCommand {
     }
 
     @Override
-    public RedisObject processing(RedisClient client) {
+    public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
         RedisObject result = null;
         DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
@@ -42,5 +43,14 @@ public class ExpireCommand extends RedisCommand {
             result = Shared.getInstance().getCone();
         }
         return result;
+    }
+
+    @Override
+    public void initChain() {
+        super.initChain();
+        handlerChain.add(new RedisCommandInitClientHandler());
+        handlerChain.add(new RedisCommandCheckParamNumsHandler());
+        handlerChain.add(new RedisCommandAofHandler());
+        handlerChain.add(new RedisCommandProcessHandler());
     }
 }
