@@ -1,16 +1,22 @@
-package com.jllsq.handler.command;
+package com.jllsq.command;
 
-import com.jllsq.RedisServer;
+import com.jllsq.command.handler.RedisCommandClientHandler;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
+import com.jllsq.config.Shared;
 import com.jllsq.holder.RedisServerStateHolder;
 import lombok.Data;
 
+import java.util.LinkedList;
+import java.util.List;
+
 @Data
 public abstract class RedisCommand {
+
+    protected RedisCommandClientHandlerChain handlerChain;
 
     private SDS name;
     private int arity;
@@ -18,6 +24,7 @@ public abstract class RedisCommand {
     public RedisCommand(SDS name, int arity) {
         this.name = name;
         this.arity = arity;
+        initChain();
     }
 
     public abstract RedisObject process(RedisClient client);
@@ -40,5 +47,9 @@ public abstract class RedisCommand {
             }
             return false;
         }
+    }
+
+    public void initChain() {
+        this.handlerChain = new RedisCommandClientHandlerChain();
     }
 }

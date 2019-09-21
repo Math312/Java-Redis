@@ -1,16 +1,15 @@
-package com.jllsq.handler.command.impl;
+package com.jllsq.command.impl;
 
+import com.jllsq.command.handler.impl.*;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.map.DictEntry;
 import com.jllsq.common.sds.SDS;
 import com.jllsq.config.Shared;
-import com.jllsq.handler.command.RedisCommand;
+import com.jllsq.command.RedisCommand;
 import com.jllsq.holder.RedisServerObjectHolder;
 import com.jllsq.holder.RedisServerStateHolder;
-
-import java.util.Date;
 
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_ENCODING_INT;
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
@@ -44,5 +43,15 @@ public class ExpireCommand extends RedisCommand {
             result = Shared.getInstance().getCone();
         }
         return result;
+    }
+
+    @Override
+    public void initChain() {
+        super.initChain();
+        handlerChain.add(new RedisCommandInitClientHandler());
+        handlerChain.add(new RedisCommandCheckParamNumsHandler());
+        handlerChain.add(new CommonLongParamCheckHandler());
+        handlerChain.add(new RedisCommandAofHandler());
+        handlerChain.add(new RedisCommandProcessHandler());
     }
 }
