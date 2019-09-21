@@ -25,6 +25,10 @@ public class RedisServerHandler extends ChannelInboundHandlerAdapter {
         RedisClient client = (RedisClient) message;
         RedisCommandProcessor processor = new BasicRedisCommandProcessor();
         RedisObject response = (RedisObject) processor.process(client);
+        for (int i = 0;i < client.getArgv().length;i ++) {
+            client.getArgv()[i].destructor();
+            client.getArgv()[i] = null;
+        }
         context.writeAndFlush(response)
                 .addListener(ChannelFutureListener.CLOSE);
     }

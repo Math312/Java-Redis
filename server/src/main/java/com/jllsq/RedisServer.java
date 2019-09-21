@@ -215,13 +215,6 @@ public class RedisServer {
             e.printStackTrace();
         }
         this.cronLoops = 0;
-        if (logFile != null) {
-            try {
-                RedisLog.getInstance().init(logFile.getContent());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
         if (appendFileName != null) {
             try {
                 if (RedisAofLog.getInstance().init(appendFileName.getContent())) {
@@ -253,21 +246,25 @@ public class RedisServer {
                     if (line.startsWith("#") || line.length() == 0) {
                         continue;
                     }
-                    String[] config = line.split(" ");
+                    String[] config = line.split("\\s{1,}");
                     if (config[0].equals(TIME_OUT) && config.length == 2) {
                         this.maxIdleTime = Integer.parseInt(config[1]);
                     } else if (config[0].equals(PORT) && config.length == 2) {
                         this.port = Integer.parseInt(config[1]);
                         if (this.port < 1 || this.port > 65535) {
-                            throw new RuntimeException();
+                            String errorLog = String.format("Attribute [ port ] must be between 1 and 65535!",config[0]);
+                            RedisLog.getInstance().log(LOG_LEVEL_WARNING,errorLog);
+                            System.exit(1);
                         }
                     } else if (config[0].equals(BIND) && config.length == 2) {
                         this.bindAddr = new SDS(config[1]);
                     } else if (config[0].equals(SAVE) && config.length == 3) {
                         long seconds = Long.parseLong(config[1]);
                         long changes = Long.parseLong(config[2]);
-                        if (seconds < 1 || changes > 0) {
-                            throw new RuntimeException();
+                        if (seconds < 1 || changes < 0) {
+                            String errorLog = String.format("Attribute [ save ] config error");
+                            RedisLog.getInstance().log(LOG_LEVEL_WARNING,errorLog);
+                            System.exit(1);
                         }
                         appendServerSaveParams(seconds, changes);
                     } else if (config[0].equals(LOG_LEVEL) && config.length == 2) {
@@ -280,22 +277,25 @@ public class RedisServer {
                         } else if (config[1].equals(LOG_LEVEL_VERBOSE_STR)) {
                             this.verbosity = LOG_LEVEL_VERBOSE;
                         } else {
-                            throw new RuntimeException();
+                            String errorLog = String.format("Attribute [ verbosity ] config error");
+                            RedisLog.getInstance().log(LOG_LEVEL_WARNING,errorLog);
+                            System.exit(1);
                         }
                     } else if (config[0].equals(LOG_FILE) && config.length == 2) {
                         if (config[1].equals(STDOUT)) {
                             this.logFile = null;
                         } else {
-                            File file = new File(config[1]);
-                            FileOutputStream fileOutputStream = new FileOutputStream(file);
-                            fileOutputStream.close();
                             this.logFile = new SDS(config[1]);
+                            if (!RedisLog.getInstance().init(logFile.getContent())) {
+                                RedisLog.getInstance().log(LOG_LEVEL_WARNING,"Logfile [ "+ this.logFile.getContent() +" ] can't be open!");
+                            }
                         }
                     } else if (config[0].equals(DATABASES) && config.length == 2) {
-
                         int dbNum = Integer.parseInt(config[1]);
                         if (dbNum < 1) {
-                            throw new RuntimeException();
+                            String errorLog = String.format("Attribute [ dbNum ] > 0");
+                            RedisLog.getInstance().log(LOG_LEVEL_WARNING,errorLog);
+                            System.exit(1);
                         }
                         RedisServerDbHolder.getInstance().setDbNum(Integer.parseInt(config[1])); ;
 
@@ -346,11 +346,19 @@ public class RedisServer {
                     } else if (config[0].equals(DB_FILE_NAME) && config.length == 2) {
                         this.dbFilename = new SDS(config[1]);
                     } else {
-                        throw new RuntimeException();
+                        String errorLog = String.format("Attribute [ %s ] isn't redis configuration!",config[0]);
+                        RedisLog.getInstance().log(LOG_LEVEL_WARNING,errorLog);
+                        System.exit(1);
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                String errorLog = String.format("config file can't open");
+                try {
+                    RedisLog.getInstance().log(LOG_LEVEL_WARNING,errorLog);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+                System.exit(1);
             }
         }
     }
