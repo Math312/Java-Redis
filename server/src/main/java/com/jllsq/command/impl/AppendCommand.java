@@ -10,6 +10,7 @@ import com.jllsq.common.sds.exception.SDSMaxLengthException;
 import com.jllsq.config.Shared;
 import com.jllsq.command.RedisCommand;
 import com.jllsq.holder.RedisServerStateHolder;
+import org.apache.commons.lang3.SerializationUtils;
 
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
@@ -22,10 +23,11 @@ public class AppendCommand extends RedisCommand {
     @Override
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
-        RedisObject result = null;
         DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
         if (entry == null) {
-            boolean addResult = db.getDict().add(client.getArgv()[1], client.getArgv()[2]);
+            RedisObject key = SerializationUtils.clone(client.getArgv()[1]);
+            RedisObject value = SerializationUtils.clone(client.getArgv()[2]);
+            boolean addResult = db.getDict().add(key, value);
             if (addResult) {
                 RedisServerStateHolder.getInstance().incrDirty();
                 return db.getDict().find(client.getArgv()[1]).getValue();

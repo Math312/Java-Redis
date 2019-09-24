@@ -1,4 +1,4 @@
-package com.jllsq.handler.decoder;
+package com.jllsq.codec;
 
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.sds.SDS;

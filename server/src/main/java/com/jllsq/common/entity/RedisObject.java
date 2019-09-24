@@ -3,8 +3,13 @@ package com.jllsq.common.entity;
 import com.jllsq.holder.RedisServerObjectHolder;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class RedisObject implements Cloneable,Comparable<RedisObject> {
+public class RedisObject implements Cloneable,Comparable<RedisObject>, Serializable {
+
+    private static final long serialVersionUID = -6321681668995180550L;
+
     private boolean isShared;
     private Object ptr;
     private byte type;
