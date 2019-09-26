@@ -195,6 +195,7 @@ public class RedisServer {
                     .option(ChannelOption.SO_BACKLOG,300)
                     .option(ChannelOption.TCP_NODELAY,true)
                     .option(ChannelOption.SO_KEEPALIVE,true)
+                    .option(ChannelOption.SO_TIMEOUT,500)
                     .childHandler(new ChannelInitializer<SocketChannel>() { //7
                         @Override
                         public void initChannel(SocketChannel ch) {
