@@ -1,10 +1,9 @@
 package com.jllsq.common.entity;
 
-import com.jllsq.common.sds.SDS;
+import io.netty.channel.Channel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.nio.channels.Channel;
 
 @Data
 @AllArgsConstructor

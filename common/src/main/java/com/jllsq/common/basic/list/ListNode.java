@@ -1,4 +1,4 @@
-package com.jllsq.common.list;
+package com.jllsq.common.basic.list;
 
 import lombok.Data;
 

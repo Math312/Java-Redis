@@ -1,7 +1,7 @@
-package com.jllsq.common.map;
+package com.jllsq.common.basic.map;
 
-import com.jllsq.common.RedisClonable;
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.basic.RedisClonable;
+import com.jllsq.common.basic.sds.SDS;
 
 public interface DictType<U extends RedisClonable & Comparable, T> {
 

@@ -1,7 +1,7 @@
-package com.jllsq.common.sds;
+package com.jllsq.common.basic.sds;
 
-import com.jllsq.common.RedisClonable;
-import com.jllsq.common.sds.exception.SDSMaxLengthException;
+import com.jllsq.common.basic.RedisClonable;
+import com.jllsq.common.basic.sds.exception.SDSMaxLengthException;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;

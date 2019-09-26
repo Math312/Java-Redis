@@ -1,4 +1,4 @@
-package com.jllsq.common;
+package com.jllsq.common.basic;
 
 public interface RedisClonable {
 
