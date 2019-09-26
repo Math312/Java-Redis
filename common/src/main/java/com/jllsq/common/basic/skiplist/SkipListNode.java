@@ -1,4 +1,4 @@
-package com.jllsq.common.skiplist;
+package com.jllsq.common.basic.skiplist;
 
 import lombok.Data;
 

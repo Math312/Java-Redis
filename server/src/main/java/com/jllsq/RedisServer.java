@@ -1,9 +1,10 @@
 package com.jllsq;
 
+import com.jllsq.common.channel.RedisConnChannel;
 import com.jllsq.common.entity.*;
-import com.jllsq.common.map.Dict;
-import com.jllsq.common.map.DictEntry;
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.basic.map.Dict;
+import com.jllsq.common.basic.map.DictEntry;
+import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
 import com.jllsq.command.RedisCommand;
@@ -22,7 +23,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import com.jllsq.common.list.List;
+import com.jllsq.common.basic.list.List;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.Data;
 

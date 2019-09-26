@@ -1,7 +1,6 @@
 package com.jllsq.common.entity;
 
-import com.jllsq.common.map.Dict;
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.basic.map.Dict;
 import lombok.Data;
 
 @Data

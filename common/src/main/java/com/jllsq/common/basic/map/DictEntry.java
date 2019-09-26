@@ -1,4 +1,4 @@
-package com.jllsq.common.map;
+package com.jllsq.common.basic.map;
 
 
 public class DictEntry<U,T> implements Cloneable {

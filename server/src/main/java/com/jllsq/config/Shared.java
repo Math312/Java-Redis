@@ -1,9 +1,8 @@
 package com.jllsq.config;
 
 import com.jllsq.common.entity.RedisObject;
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.holder.RedisServerObjectHolder;
-import lombok.Data;
 import lombok.Getter;
 
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;

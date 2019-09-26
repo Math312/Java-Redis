@@ -2,7 +2,7 @@ package com.jllsq.log;
 
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.util.AofUtil;
 import com.jllsq.common.BasicFileWriter;
 import com.jllsq.command.RedisCommandEnum;

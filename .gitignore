@@ -8,6 +8,9 @@
 ./settings
 application.pid
 redis.log
-./target/*
+target/*
 *.aof
 *.conf
+client/dependency-reduced-pom.xml
+common/dependency-reduced-pom.xml
+server/dependency-reduced-pom.xml
