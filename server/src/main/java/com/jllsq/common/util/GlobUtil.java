@@ -1,5 +1,7 @@
 package com.jllsq.common.util;
 
+import sun.nio.fs.Globs;
+
 public class GlobUtil {
 
     public static boolean match(byte[] string,int stringLen,byte[] pattern, int patternLen) {
@@ -25,6 +27,21 @@ public class GlobUtil {
         if (pattern[patternIndex] == '?' || string[stringIndex] == pattern[patternIndex]) {
             return match(string,stringLen,stringIndex+1,pattern,patternLen,patternIndex+1);
         }
+        if (pattern[patternIndex] == '[') {
+            int index = patternIndex;
+            boolean wrong = true;
+            while(index < patternLen) {
+                if (index == ']') {
+                    wrong = false;
+                }else {
+                    index ++;
+                }
+            }
+            if (wrong == true) {
+                throw new IllegalArgumentException();
+            }
+        }
+
         return false;
 
 
