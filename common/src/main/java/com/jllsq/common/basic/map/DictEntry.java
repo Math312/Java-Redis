@@ -1,7 +1,11 @@
 package com.jllsq.common.basic.map;
 
 
-public class DictEntry<U,T> implements Cloneable {
+import java.io.Serializable;
+
+public class DictEntry<U,T> implements Cloneable, Serializable {
+
+    private static final long serialVersionUID = 5599475723267601562L;
 
     private U key;
     private T value;
@@ -46,7 +50,7 @@ public class DictEntry<U,T> implements Cloneable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        DictEntry<U,T> dictEntry = new DictEntry(this.getKey(),this.getValue(),this.next);
+        DictEntry<U,T> dictEntry = new DictEntry(this.getKey(),this.getValue());
         return dictEntry;
     }
 }

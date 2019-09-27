@@ -1,8 +1,14 @@
 package com.jllsq.common.basic.map;
+import org.apache.commons.lang3.SerializationUtils;
+
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Random;
 
-public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
+public class Dict<U,T> implements Iterable<DictEntry<U,T>>, Serializable {
+
+    private static final long serialVersionUID = 7887265299375772551L;
+
     private DictEntry<U,T>[] table;
     private int size;
     private int sizeMask;
@@ -25,24 +31,27 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>{
 
     public Dict expand(int size) {
         DictEntry[] temp = new DictEntry[size];
+        Dict<U,T> dict = SerializationUtils.clone(this);
         int sizeMask = size - 1;
-        Iterator<DictEntry<U,T>> iterator = this.iterator();
+        Iterator<DictEntry<U,T>> iterator = dict.iterator();
         int hash;
         while (iterator.hasNext()){
             DictEntry<U,T> dictEntry = iterator.next();
-            int hash2 = hashFunction(dictEntry.getKey()) & sizeMask;
-            if (temp[hash2] == null) {
-                temp[hash2] = dictEntry;
-            } else {
-                DictEntry<U,T> tempEntry = temp[hash2];
-                try {
-                    temp[hash2] = ((DictEntry) (dictEntry.clone()));
+            try {
+                DictEntry<U,T> newEntry = (DictEntry<U,T>)dictEntry.clone();
+                int hash2 = hashFunction(dictEntry.getKey()) & sizeMask;
+                if (temp[hash2] == null) {
+                    temp[hash2] = newEntry;
+                } else {
+                    DictEntry<U,T> tempEntry = temp[hash2];
+                    temp[hash2] = ((DictEntry) (newEntry));
                     temp[hash2].setNext(tempEntry);
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
                 }
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
             }
         }
+
         this.table = temp;
         this.sizeMask = sizeMask;
         this.size = size;

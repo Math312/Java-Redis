@@ -30,18 +30,54 @@ public class GlobUtil {
         if (pattern[patternIndex] == '[') {
             int index = patternIndex;
             boolean wrong = true;
+            int start;
+            int end;
+            boolean range = false;
             while(index < patternLen) {
-                if (index == ']') {
+                if (pattern[index] == ']') {
                     wrong = false;
+                    break;
                 }else {
+                    if (pattern[index] == '-'){
+                        range = true;
+                    }
                     index ++;
                 }
             }
-            if (wrong == true) {
+            if (wrong) {
                 throw new IllegalArgumentException();
             }
+            if (range) {
+                if (index-patternIndex < 4) {
+                    throw new IllegalArgumentException();
+                }
+                start = pattern[patternIndex+1];
+                end = pattern[index-1];
+                if (string[stringIndex] >= start && string[stringIndex] <= end) {
+                    return match(string, stringLen, stringIndex + 1, pattern, patternLen, index + 1);
+                } else {
+                    return false;
+                }
+            }
+            boolean result = false;
+            for (int i = patternIndex+1;i < index;i ++){
+                if (string[stringIndex] == pattern[i]) {
+                    result = true;
+                }
+            }
+            if (result) {
+                return match(string, stringLen, stringIndex + 1, pattern, patternLen, index + 1);
+            }
+            return false;
         }
-
+        if (pattern[patternIndex] == '\\') {
+            if (patternIndex+1 < patternLen || pattern[patternIndex+1] == '*' || pattern[patternIndex+1] == '?' || pattern[patternIndex+1] == '[') {
+                return string[stringIndex]==pattern[patternIndex+1]&&match(string, stringLen, stringIndex+1, pattern, patternLen, patternIndex+2);
+            }
+            else {
+                return string[stringIndex]==pattern[patternIndex]&&match(string, stringLen, stringIndex+1, pattern, patternLen, patternIndex+1);
+            }
+        }
         return false;
 
 
