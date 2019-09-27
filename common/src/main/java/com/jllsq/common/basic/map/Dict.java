@@ -1,4 +1,4 @@
-package com.jllsq.common.map;
+package com.jllsq.common.basic.map;
 import java.util.Iterator;
 import java.util.Random;
 

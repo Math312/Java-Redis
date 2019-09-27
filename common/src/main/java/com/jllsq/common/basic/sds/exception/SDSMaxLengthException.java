@@ -1,4 +1,4 @@
-package com.jllsq.common.sds.exception;
+package com.jllsq.common.basic.sds.exception;
 
 import java.io.UnsupportedEncodingException;
 

@@ -26,5 +26,6 @@ You can use the `redis-cli` provided by `redis` to connecting the port 6379.
 6. TTL
 7. PING
 8. DEL
+9. KEYS
 
 I will support all commands provided by redis.

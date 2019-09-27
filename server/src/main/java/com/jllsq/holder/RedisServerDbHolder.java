@@ -1,7 +1,7 @@
 package com.jllsq.holder;
 
 import com.jllsq.common.entity.RedisDb;
-import com.jllsq.common.list.List;
+import com.jllsq.common.basic.list.List;
 import org.apache.commons.lang3.SerializationUtils;
 
 public class RedisServerDbHolder {

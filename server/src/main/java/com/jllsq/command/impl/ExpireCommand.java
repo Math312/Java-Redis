@@ -4,12 +4,13 @@ import com.jllsq.command.handler.impl.*;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
-import com.jllsq.common.map.DictEntry;
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.basic.map.DictEntry;
+import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.config.Shared;
 import com.jllsq.command.RedisCommand;
 import com.jllsq.holder.RedisServerObjectHolder;
 import com.jllsq.holder.RedisServerStateHolder;
+import org.apache.commons.lang3.SerializationUtils;
 
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_ENCODING_INT;
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
@@ -35,7 +36,8 @@ public class ExpireCommand extends RedisCommand {
             object.setPtr(expires);
             RedisObject expiresObject = RedisServerObjectHolder.getInstance().createObject(false,REDIS_STRING,expires,REDIS_ENCODING_INT);
             if (expireEntry == null) {
-                db.getExpires().add(client.getArgv()[1],expiresObject);
+                RedisObject key = SerializationUtils.clone(client.getArgv()[1]);
+                db.getExpires().add(key,expiresObject);
             } else {
                 expireEntry.setValue(expiresObject);
             }

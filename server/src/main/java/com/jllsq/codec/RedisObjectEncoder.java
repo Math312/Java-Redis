@@ -1,11 +1,16 @@
-package com.jllsq.handler.decoder;
+package com.jllsq.codec;
 
+import com.jllsq.common.basic.list.List;
+import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.entity.RedisObject;
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.util.IntegerUtil;
+import com.jllsq.common.util.LongUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+
+import java.util.Iterator;
 
 import static com.jllsq.holder.RedisServerObjectHolder.*;
 
@@ -28,6 +33,41 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
                     content[content.length-2] = '\r';
                     System.arraycopy(temp,0,content,2,((SDS)ptr).getUsed());
                     out.writeBytes(Unpooled.copiedBuffer(content));
+                } else if (msg.getType() == REDIS_LIST) {
+                    List<SDS> list = (List<SDS>) ptr;
+                    Iterator<SDS> iterator = list.iterator();
+                    int length = list.length();
+                    int total = 1;
+                    int len = LongUtils.longToBytesLength(length);
+                    total += len;
+                    total += 2;
+                    while (iterator.hasNext()) {
+                        SDS sds = iterator.next();
+                        total += 1;
+                        total += sds.getUsed();
+                        total += 2;
+                    }
+                    byte[] result = new byte[total];
+                    int index = 0;
+                    result[0]='*';
+                    index ++;
+                    LongUtils.longToBytes(length,0,result,index,len);
+                    index += len;
+                    result[index] = '\r';
+                    result[index+1] = '\n';
+                    index += 2;
+                    iterator = list.iterator();
+                    while (iterator.hasNext()) {
+                        SDS sds = iterator.next();
+                        result[index] = '+';
+                        index += 1;
+                        System.arraycopy(sds.getBytes(),0,result,index,sds.getUsed());
+                        index += sds.getUsed();
+                        result[index] = '\r';
+                        result[index+1] = '\n';
+                        index += 2;
+                    }
+                    out.writeBytes(Unpooled.copiedBuffer(result));
                 }
             }
         } else if (msg.getEncoding() == REDIS_ENCODING_INT) {

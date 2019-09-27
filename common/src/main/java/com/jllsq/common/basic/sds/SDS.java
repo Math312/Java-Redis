@@ -1,11 +1,14 @@
-package com.jllsq.common.sds;
+package com.jllsq.common.basic.sds;
 
-import com.jllsq.common.RedisClonable;
-import com.jllsq.common.sds.exception.SDSMaxLengthException;
+import com.jllsq.common.basic.RedisClonable;
+import com.jllsq.common.basic.sds.exception.SDSMaxLengthException;
 
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 
-public class SDS implements RedisClonable, Comparable<SDS> {
+public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
+
+    private static final long serialVersionUID = 7887265299375772551L;
 
     public static int INIT_SIZE = 1024;
     public static int EXPAND_SPLIT = 1024 * 1024;

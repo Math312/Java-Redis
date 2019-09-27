@@ -1,6 +1,6 @@
 package com.jllsq.common.util;
 
-import com.jllsq.common.sds.SDS;
+import com.jllsq.common.basic.sds.SDS;
 
 /**
  * @author yanlishao
