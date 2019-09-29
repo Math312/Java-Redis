@@ -2,10 +2,9 @@ package com.jllsq.handler;
 
 import com.jllsq.RedisServer;
 import com.jllsq.command.processor.RedisCommandProcessor;
+import com.jllsq.command.processor.impl.BasicRedisCommandProcessor;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
-import com.jllsq.command.processor.impl.BasicRedisCommandProcessor;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
