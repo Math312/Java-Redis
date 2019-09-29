@@ -3,6 +3,9 @@ package com.jllsq.common.util;
 public class GlobUtil {
 
     public static boolean match(byte[] string, int stringLen, byte[] pattern, int patternLen) {
+        if (stringLen > string.length || patternLen > pattern.length) {
+            throw new IllegalArgumentException();
+        }
         return match(string, stringLen, 0, pattern, patternLen, 0);
     }
 
@@ -21,7 +24,7 @@ public class GlobUtil {
             int end;
             boolean range = false;
             while (index < patternLen) {
-                if (pattern[index] == ']') {
+                if (pattern[index] == ']' && pattern[index-1] != '\\') {
                     wrong = false;
                     break;
                 } else {
@@ -48,7 +51,12 @@ public class GlobUtil {
             }
             boolean result = false;
             for (int i = patternIndex + 1; i < index; i++) {
-                if (string[stringIndex] == pattern[i]) {
+                if (pattern[i] == '\\' && i < index - 1 && (pattern[i+1] == '*' || pattern[i+1] == '?' || pattern[i+1] == '[' || pattern[i+1] == ']')) {
+                    if (string[stringIndex] == pattern[i+1]) {
+                        result = true;
+                        i ++;
+                    }
+                } else if (string[stringIndex] == pattern[i]) {
                     result = true;
                 }
             }
