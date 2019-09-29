@@ -169,6 +169,7 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     public void setBytes(byte[] content) {
         this.length = content.length;
         this.content = content;
+        this.used = content.length;
     }
 
     public void setUsed(int used) {

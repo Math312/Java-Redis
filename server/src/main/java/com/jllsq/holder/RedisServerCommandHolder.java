@@ -26,6 +26,7 @@ public class RedisServerCommandHolder  {
         commandMap.put(new SDS("auth"),new AuthCommand());
         commandMap.put(new SDS("keys"),new KeysCommand());
         commandMap.put(new SDS("incr"),new IncrCommand());
+        commandMap.put(new SDS("decr"),new DecrCommand());
     }
 
 
