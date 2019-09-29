@@ -43,7 +43,9 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
                     while (iterator.hasNext()) {
                         SDS sds = iterator.next();
                         total += 1;
+                        total += 1;
                         total += sds.getUsed();
+                        total += 1;
                         total += 2;
                     }
                     byte[] result = new byte[total];
@@ -60,8 +62,12 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
                         SDS sds = iterator.next();
                         result[index] = '+';
                         index += 1;
+                        result[index] = '\"';
+                        index += 1;
                         System.arraycopy(sds.getBytes(),0,result,index,sds.getUsed());
                         index += sds.getUsed();
+                        result[index] = '\"';
+                        index += 1;
                         result[index] = '\r';
                         result[index+1] = '\n';
                         index += 2;
