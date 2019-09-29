@@ -35,10 +35,6 @@ public class KeysCommand extends RedisCommand {
             if (GlobUtil.match(stringSds.getBytes(),stringSds.getUsed(),patternSds.getBytes(),patternSds.getUsed())) {
                 list.addLast((SDS) entry.getKey().getPtr());
             }
-
-//            if (((SDS)(entry.getKey().getPtr())).getContent().matches(pattern) && expireIfNeed(db,entry.getKey())) {
-//                list.addLast((SDS) entry.getKey().getPtr());
-//            }
         }
         RedisObject result = new RedisObject(false, REDIS_LIST,list,REDIS_ENCODING_RAW);
         return result;

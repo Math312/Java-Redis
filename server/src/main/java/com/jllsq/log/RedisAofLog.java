@@ -1,6 +1,5 @@
 package com.jllsq.log;
 
-import com.jllsq.command.RedisCommandEnum;
 import com.jllsq.common.BasicFileWriter;
 import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.entity.RedisClient;
@@ -60,7 +59,7 @@ public class RedisAofLog extends BasicFileWriter {
         if (client.getArgv().length > 0) {
             RedisObject commandObject = client.getArgv()[0];
             SDS commandSds = (SDS)(commandObject.getPtr());
-            if (commandSds.equals(RedisCommandEnum.EXPIRE_COMMAND.getCommand().getName())) {
+            if (commandSds.equals("expire")) {
                 RedisObject object = client.getArgv()[2];
                 long expires = (long) object.getPtr();
                 object.setPtr(new SDS(expires+""));

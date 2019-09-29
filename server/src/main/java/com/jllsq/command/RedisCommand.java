@@ -8,9 +8,12 @@ import com.jllsq.common.entity.RedisObject;
 import com.jllsq.holder.RedisServerStateHolder;
 import lombok.Data;
 
-@Data
-public abstract class RedisCommand {
+import java.io.Serializable;
 
+@Data
+public abstract class RedisCommand implements Serializable {
+
+    private static final long serialVersionUID = -3642545448143222676L;
     protected RedisCommandClientHandlerChain handlerChain;
 
     private SDS name;
