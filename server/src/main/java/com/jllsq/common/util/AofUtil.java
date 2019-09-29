@@ -1,7 +1,7 @@
 package com.jllsq.common.util;
 
-import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.basic.sds.SDS;
+import com.jllsq.common.entity.RedisClient;
 
 import static com.jllsq.config.Constants.*;
 

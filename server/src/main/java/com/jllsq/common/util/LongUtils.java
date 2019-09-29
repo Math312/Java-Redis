@@ -1,7 +1,6 @@
 package com.jllsq.common.util;
 
 import static com.jllsq.config.Constants.*;
-import static com.jllsq.config.Constants.TEN;
 
 public class LongUtils {
 

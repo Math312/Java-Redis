@@ -1,7 +1,5 @@
 package com.jllsq.holder;
 
-import java.util.Date;
-
 public class RedisServerStateHolder {
 
     /**
