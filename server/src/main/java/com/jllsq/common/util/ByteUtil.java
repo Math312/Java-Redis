@@ -35,4 +35,23 @@ public class ByteUtil {
         }
         return true;
     }
+
+    public static long byteToLong(byte[] bytes,int length) {
+        if (!bytesIsLong(bytes,length)) {
+            throw new IllegalArgumentException();
+        }
+        long result = 0;
+        int start = 0;
+        if (bytes[0] == SUB) {
+            start = 1;
+        }
+        for (int i = start;i < length;i ++) {
+            result *= 10;
+            result += bytes[i] - '0';
+        }
+        if (start == 1) {
+            result = -result;
+        }
+        return result;
+    }
 }

@@ -130,6 +130,19 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
         System.arraycopy(bytes, 0, this.content, 0, bytes.length);
     }
 
+    public SDS toLower() {
+        byte[] bytes = new byte[this.used];
+        for (int i = 0;i < bytes.length;i ++) {
+            if (content[i] >= 'A' && content[i] <= 'Z') {
+                bytes[i] = (byte) (content[i]+ 0x20);
+            }
+            else {
+                bytes[i] = content[i];
+            }
+        }
+        return new SDS(bytes);
+    }
+
     public void sdsToUpper() {
         String str = getContent();
         str = str.toUpperCase();
@@ -156,6 +169,7 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     public void setBytes(byte[] content) {
         this.length = content.length;
         this.content = content;
+        this.used = content.length;
     }
 
     public void setUsed(int used) {

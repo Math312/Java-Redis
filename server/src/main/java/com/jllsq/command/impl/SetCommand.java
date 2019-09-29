@@ -26,7 +26,7 @@ public class SetCommand extends RedisCommand {
         RedisObject value = SerializationUtils.clone(client.getArgv()[2]);
         if (db.getDict().add(key,value)) {
             db.getExpires().delete(client.getArgv()[1]);
-            result = Shared.getInstance().getCone();
+            result = Shared.getInstance().getOk();
         } else {
             result = Shared.getInstance().getCzero();
         }

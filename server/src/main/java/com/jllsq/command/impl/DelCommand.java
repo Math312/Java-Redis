@@ -27,8 +27,10 @@ public class DelCommand extends RedisCommand {
             dataEntry.getValue().destructor();
             dataEntry.getKey().destructor();
             dataEntry = db.getExpires().delete(client.getArgv()[1]);
-            dataEntry.getValue().destructor();
-            dataEntry.getKey().destructor();
+            if (dataEntry != null) {
+                dataEntry.getValue().destructor();
+                dataEntry.getKey().destructor();
+            }
             RedisServerStateHolder.getInstance().incrDirty();
         } else {
             return Shared.getInstance().getNokeyerr();

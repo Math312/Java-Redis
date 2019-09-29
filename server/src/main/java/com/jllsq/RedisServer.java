@@ -3,7 +3,6 @@ package com.jllsq;
 import com.jllsq.codec.RedisObjectDecoder;
 import com.jllsq.codec.RedisObjectEncoder;
 import com.jllsq.command.RedisCommand;
-import com.jllsq.command.RedisCommandEnum;
 import com.jllsq.common.basic.list.List;
 import com.jllsq.common.basic.map.Dict;
 import com.jllsq.common.basic.map.DictEntry;
@@ -14,6 +13,7 @@ import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.entity.SaveParam;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
+import com.jllsq.holder.RedisServerCommandHolder;
 import com.jllsq.holder.RedisServerDbHolder;
 import com.jllsq.holder.RedisServerEventLoopHolder;
 import com.jllsq.holder.RedisServerStateHolder;
@@ -234,7 +234,7 @@ public class RedisServer {
                     java.util.List<RedisClient> list = RedisAofLog.getInstance().readClient();
                     for (RedisClient client:list) {
                         client.setDb(RedisServerDbHolder.getInstance().getSelectedDb());
-                        RedisCommand command = RedisCommandEnum.getCommandByKey((SDS) (client.getArgv()[0].getPtr())).getCommand();
+                        RedisCommand command = RedisServerCommandHolder.getInstance().getIgnoreCase((SDS) (client.getArgv()[0].getPtr()));
                         if (command != null) {
                             command.process(client);
                         }
