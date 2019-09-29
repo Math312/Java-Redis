@@ -1,7 +1,7 @@
 package com.jllsq.command;
 
-import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.command.impl.*;
+import com.jllsq.common.basic.sds.SDS;
 
 public enum RedisCommandEnum {
 
