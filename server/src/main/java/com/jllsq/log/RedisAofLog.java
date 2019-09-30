@@ -12,7 +12,6 @@ import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,6 +22,7 @@ import static com.jllsq.config.Constants.*;
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_ENCODING_RAW;
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
+//todo 将Log书写转化为生产者消费者模式
 /**
  * @author yanlishao
  */
@@ -51,7 +51,10 @@ public class RedisAofLog extends BasicFileWriter {
     public void write(RedisClient client) throws IOException {
         byte[] bytes = AofUtil.encode(client);
         if (logFile != null) {
-            Files.write(Paths.get(logFile), bytes, StandardOpenOption.APPEND);
+            BasicLog basicLog = new BasicLog();
+            basicLog.setBytes(bytes);
+            basicLog.setFileName(logFile);
+            LogContainer.getInstance().put(basicLog);
         }
     }
 

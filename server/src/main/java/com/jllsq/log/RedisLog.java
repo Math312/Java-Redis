@@ -4,9 +4,6 @@ import com.jllsq.common.BasicFileWriter;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Date;
 
 
@@ -52,7 +49,10 @@ public class RedisLog extends BasicFileWriter {
             String formatLog = formatLog(log,level);
             System.out.print(formatLog);
             if (logFile != null) {
-                Files.write(Paths.get(logFile),formatLog.getBytes(), StandardOpenOption.APPEND);
+                BasicLog basicLog = new BasicLog();
+                basicLog.setBytes(formatLog.getBytes());
+                basicLog.setFileName(logFile);
+                LogContainer.getInstance().put(basicLog);
             }
         }
     }
