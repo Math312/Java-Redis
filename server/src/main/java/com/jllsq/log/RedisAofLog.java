@@ -118,7 +118,6 @@ public class RedisAofLog extends BasicFileWriter {
                     System.out.println("error");
                 }
             }
-            client.setDictId(0);
             client.setArgc(length);
             client.setArgv(argv);
             redisClients.add(client);

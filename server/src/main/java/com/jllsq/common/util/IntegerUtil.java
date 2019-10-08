@@ -40,7 +40,7 @@ public class IntegerUtil {
             start = 1;
         }
         for (int i = start;i < length;i ++) {
-            if (bytes[i] >= NINE_CHAR || bytes[i] <= ZERO_CHAR){
+            if (bytes[i] > NINE_CHAR || bytes[i] < ZERO_CHAR){
                 return false;
             }
         }
@@ -85,7 +85,7 @@ public class IntegerUtil {
             }
             return sum;
         } else {
-            throw new ClassCastException();
+            throw new IllegalArgumentException();
         }
     }
 

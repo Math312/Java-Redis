@@ -1,6 +1,5 @@
 package com.jllsq.holder;
 
-import com.jllsq.common.basic.list.List;
 import com.jllsq.common.entity.RedisDb;
 import org.apache.commons.lang3.SerializationUtils;
 
@@ -10,8 +9,7 @@ public class RedisServerDbHolder {
 
     private RedisDb db[];
     private int dbNum;
-    private List objFreeList;
-    private RedisDb selectedDb;
+    private int selectedDbIndex;
 
     public RedisDb[] getDb() {
         return db;
@@ -36,7 +34,7 @@ public class RedisServerDbHolder {
         for (int i = 0; i < this.dbNum; i++) {
             this.db[i] = new RedisDb(i);
         }
-        this.selectedDb = this.db[0];
+        this.selectedDbIndex = 0;
     }
 
     public static RedisServerDbHolder getInstance() {
@@ -61,7 +59,11 @@ public class RedisServerDbHolder {
 
     }
 
-    public RedisDb getSelectedDb() {
-        return selectedDb;
+    public void setSelectedDbIndex(int selectedDbIndex) {
+        this.selectedDbIndex = selectedDbIndex;
+    }
+
+    public int getSelectedDbIndex() {
+        return selectedDbIndex;
     }
 }

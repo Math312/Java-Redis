@@ -10,6 +10,7 @@ import com.jllsq.holder.RedisServerDbHolder;
 public class RedisCommandInitClientHandler implements RedisCommandClientHandler {
     @Override
     public RedisObject handle(RedisClient client, RedisCommand command, RedisCommandClientHandlerChain chain) {
+        client.setDictId(RedisServerDbHolder.getInstance().getSelectedDbIndex());
         client.setDb(RedisServerDbHolder.getInstance().getDb()[client.getDictId()]);
         return chain.doHandle(client,command);
     }

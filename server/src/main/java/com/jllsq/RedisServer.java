@@ -3,6 +3,7 @@ package com.jllsq;
 import com.jllsq.codec.RedisObjectDecoder;
 import com.jllsq.codec.RedisObjectEncoder;
 import com.jllsq.command.RedisCommand;
+import com.jllsq.command.processor.impl.BasicRedisCommandProcessor;
 import com.jllsq.common.basic.list.List;
 import com.jllsq.common.basic.map.Dict;
 import com.jllsq.common.basic.map.DictEntry;
@@ -13,7 +14,6 @@ import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.entity.SaveParam;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
-import com.jllsq.holder.RedisServerCommandHolder;
 import com.jllsq.holder.RedisServerDbHolder;
 import com.jllsq.holder.RedisServerEventLoopHolder;
 import com.jllsq.holder.RedisServerStateHolder;
@@ -228,16 +228,14 @@ public class RedisServer {
             }
         }
         this.cronLoops = 0;
+        BasicRedisCommandProcessor processor = new BasicRedisCommandProcessor();
         if (appendFileName != null) {
             try {
                 if (RedisAofLog.getInstance().init(appendFileName.getContent())) {
                     java.util.List<RedisClient> list = RedisAofLog.getInstance().readClient();
                     for (RedisClient client:list) {
-                        client.setDb(RedisServerDbHolder.getInstance().getSelectedDb());
-                        RedisCommand command = RedisServerCommandHolder.getInstance().getIgnoreCase((SDS) (client.getArgv()[0].getPtr()));
-                        if (command != null) {
-                            command.process(client);
-                        }
+                        client.setDictId(RedisServerDbHolder.getInstance().getSelectedDbIndex());
+                        processor.process(client);
                     }
                 }
             } catch (IOException e) {
