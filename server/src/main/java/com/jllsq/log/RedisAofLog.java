@@ -84,7 +84,7 @@ public class RedisAofLog extends BasicFileWriter {
     }
 
     public static List<RedisClient> redisClients(ByteBuf in) throws Exception {
-        RedisServerObjectHolder holder = RedisServerObjectHolder.getInstance();
+         RedisServerObjectHolder holder = RedisServerObjectHolder.getInstance();
         List<RedisClient> redisClients = new LinkedList<>();
         while (in.isReadable()) {
             RedisClient client = new RedisClient();

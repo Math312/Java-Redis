@@ -21,10 +21,14 @@ public class RedisServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext context, Object message){
-        RedisClient client = (RedisClient) message;
-        RedisCommandProcessor processor = new BasicRedisCommandProcessor();
-        RedisObject response = (RedisObject) processor.process(client);
-        context.writeAndFlush(response);
+        if (message == null) {
+            return;
+        } else {
+            RedisClient client = (RedisClient) message;
+            RedisCommandProcessor processor = new BasicRedisCommandProcessor();
+            RedisObject response = (RedisObject) processor.process(client);
+            context.writeAndFlush(response);
+        }
     }
 
     @Override

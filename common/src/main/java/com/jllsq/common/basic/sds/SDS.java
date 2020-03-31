@@ -27,10 +27,17 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     }
 
     public SDS(byte[] bytes) {
-        this.length = 1024;
-        this.used = bytes.length;
-        this.content = new byte[1024];
-        System.arraycopy(bytes, 0, content, 0, this.used);
+        if (bytes.length <= 1024)  {
+            this.length = 1024;
+            this.used = bytes.length;
+            this.content = new byte[1024];
+            System.arraycopy(bytes, 0, content, 0, this.used);
+        } else {
+            this.length = bytes.length;
+            this.used = bytes.length;
+            this.content = new byte[this.length];
+            System.arraycopy(bytes, 0, content, 0, this.used);
+        }
     }
 
     public SDS(String str) {

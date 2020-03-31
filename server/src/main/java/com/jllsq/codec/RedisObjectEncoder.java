@@ -16,6 +16,9 @@ import static com.jllsq.holder.RedisServerObjectHolder.*;
 public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
     @Override
     protected void encode(ChannelHandlerContext ctx, RedisObject msg, ByteBuf out) throws Exception {
+        if (msg == null) {
+            return;
+        }
         Object ptr = msg.getPtr();
         if (msg.getEncoding() == REDIS_ENCODING_RAW) {
             if (msg.isShared()){

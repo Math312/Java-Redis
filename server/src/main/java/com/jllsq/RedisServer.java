@@ -197,6 +197,7 @@ public class RedisServer {
             b.group(group)
                     .channel(NioServerSocketChannel.class)
                     .localAddress(new InetSocketAddress(this.port))
+//                    .option(ChannelOption.ALLOCATOR,(ByteBufAllocator) new AdaptiveRecvByteBufAllocator(1024,65535,65535))
                     .option(ChannelOption.SO_BACKLOG,300)
                     .option(ChannelOption.TCP_NODELAY,true)
                     .option(ChannelOption.SO_KEEPALIVE,true)
@@ -304,7 +305,7 @@ public class RedisServer {
                     } else if (config[0].equals(DATABASES) && config.length == 2) {
                         int dbNum = Integer.parseInt(config[1]);
                         if (dbNum < 1) {
-                            String errorLog = String.format("Attribute [ dbNum ] > 0");
+                            String errorLog = "Attribute [ dbNum ] > 0";
                             RedisLog.getInstance().log(LOG_LEVEL_WARNING,errorLog);
                             System.exit(1);
                         }
