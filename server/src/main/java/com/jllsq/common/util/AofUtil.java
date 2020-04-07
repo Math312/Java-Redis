@@ -93,7 +93,7 @@ public class AofUtil {
             index ++;
             result[index] = LF;
             index ++;
-            System.arraycopy(sds.getBytes(),0,result,index,sds.getUsed());
+            System.arraycopy(sds.getBytes(),8,result,index,sds.getUsed());
             index += sds.getUsed();
             result[index] = CR;
             index ++;

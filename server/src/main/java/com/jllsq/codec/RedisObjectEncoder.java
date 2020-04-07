@@ -22,7 +22,8 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
         Object ptr = msg.getPtr();
         if (msg.getEncoding() == REDIS_ENCODING_RAW) {
             if (msg.isShared()){
-                out.writeBytes(((SDS)ptr).getBytes());
+                byte[] content = ((SDS)ptr).getBytes();
+                out.writeBytes(content,8,content.length-8);
             }
             else {
                 if (msg.getType() == REDIS_STRING) {
@@ -33,7 +34,7 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
                     content[content.length-3] = '"';
                     content[content.length-1] = '\n';
                     content[content.length-2] = '\r';
-                    System.arraycopy(temp,0,content,2,((SDS)ptr).getUsed());
+                    System.arraycopy(temp,8,content,2,((SDS)ptr).getUsed());
                     out.writeBytes(Unpooled.copiedBuffer(content));
                 } else if (msg.getType() == REDIS_LIST) {
                     List<SDS> list = (List<SDS>) ptr;

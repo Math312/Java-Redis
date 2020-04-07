@@ -2,6 +2,7 @@ package com.jllsq.common.basic.sds;
 
 import com.jllsq.common.basic.RedisClonable;
 import com.jllsq.common.basic.sds.exception.SDSMaxLengthException;
+import com.jllsq.common.util.IntegerUtil;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -10,33 +11,42 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
 
     private static final long serialVersionUID = 7887265299375772551L;
 
-    public static int INIT_SIZE = 1024;
+    public static int INIT_SIZE = 32;
     public static int EXPAND_SPLIT = 1024 * 1024;
     public static int MAX_LENGTH = 512 * 1024 * 1024;
     public static int LONG_SDS = 1024 * 1024;
-    private int length;
-
-    private int used;
-
     private byte[] content;
 
     public SDS() {
-        this.length = 1024;
-        this.used = 0;
-        this.content = new byte[1024];
+        this.content = new byte[1032];
+    }
+
+    private void setLength(int length) {
+        this.content[0] = (byte) ((length >> 24) & 0xFF);
+        this.content[1] = (byte) ((length >> 16) & 0xFF);
+        this.content[2] = (byte) ((length >> 8) & 0xFF);
+        this.content[3] = (byte) ((length) & 0xFF);
+    }
+
+    public void setUsed(int used) {
+        this.content[4] = (byte) ((used >> 24) & 0xFF);
+        this.content[5] = (byte) ((used >> 16) & 0xFF);
+        this.content[6] = (byte) ((used >> 8) & 0xFF);
+        this.content[7] = (byte) ((used) & 0xFF);
     }
 
     public SDS(byte[] bytes) {
-        if (bytes.length <= 1024)  {
-            this.length = 1024;
-            this.used = bytes.length;
-            this.content = new byte[1024];
-            System.arraycopy(bytes, 0, content, 0, this.used);
+        if (bytes.length <= INIT_SIZE) {
+            this.content = new byte[INIT_SIZE+8];
+            setLength(INIT_SIZE);
+            setUsed(bytes.length);
+            System.arraycopy(bytes, 0, content, 8, bytes.length);
         } else {
-            this.length = bytes.length;
-            this.used = bytes.length;
-            this.content = new byte[this.length];
-            System.arraycopy(bytes, 0, content, 0, this.used);
+            int length = bytes.length;
+            setUsed(length);
+            setLength(length);
+            this.content = new byte[length + 8];
+            System.arraycopy(bytes, 0, content, 8, length);
         }
     }
 
@@ -47,13 +57,11 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
                 System.out.println("this is a long sds: " + str);
             }
             int len = content.length;
-            if (len > INIT_SIZE) {
-                this.length = INIT_SIZE;
-            } else {
-                this.length = len;
-            }
-            this.used = len;
-            this.content = content;
+            byte[] bytes  = new byte[content.length+8];
+            System.arraycopy(content,0,bytes,8,content.length);
+            this.content = bytes;
+            setLength(Math.max(len, INIT_SIZE));
+            setUsed(len);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -63,17 +71,19 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
         if (size > MAX_LENGTH) {
             throw new SDSMaxLengthException(content);
         }
-        if (size > this.length) {
+        int length = getLength();
+        if (size > length) {
             int newLen = 0;
-            if (this.length <= EXPAND_SPLIT) {
-                newLen = Math.min(this.length * 2, EXPAND_SPLIT);
+            if (length <= EXPAND_SPLIT) {
+                newLen = Math.min(length * 2, EXPAND_SPLIT);
             } else {
-                newLen = this.length + EXPAND_SPLIT;
+                newLen = length + EXPAND_SPLIT;
             }
             if (newLen < size) {
                 expandIfNecessary(size);
             } else {
-                System.arraycopy(content, 0, this.content, 0, length);
+                content = new byte[newLen+8];
+                System.arraycopy(content, 0, this.content, 8, length);
             }
             return true;
         } else {
@@ -82,52 +92,17 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     }
 
     public SDS append(SDS sds) throws SDSMaxLengthException {
-        int newUsed = this.used + sds.used;
+        int sdsUsed = sds.getUsed();
+        int used = getUsed();
+        int newUsed = used + sdsUsed;
         expandIfNecessary(newUsed);
-        System.arraycopy(sds.content,0,this.content,this.used,sds.used);
-        this.used = newUsed;
+        System.arraycopy(sds.getContentBytes(), 0, this.content, used + 8, sdsUsed);
+        this.setUsed(newUsed);
         return this;
     }
 
-    public String setContent(String str) {
-        try {
-            byte[] content = str.getBytes("utf-8");
-            if (content.length >= LONG_SDS) {
-                System.out.println("this is a long sds: " + str);
-            }
-            try {
-                expandIfNecessary(content.length);
-                System.arraycopy(content, 0, this.content, 0, content.length);
-                this.used = content.length;
-            } catch (SDSMaxLengthException e) {
-                e.printStackTrace();
-            }
-            return getContent();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
-    public SDS sdsDup() {
-        SDS sds = new SDS();
-        sds.length = this.length;
-        sds.used = this.used;
-        sds.content = new byte[sds.length];
-        System.arraycopy(this.content, 0, sds.content, 0, this.used);
-        return sds;
-    }
-
-
-    public void sdsEmpty() {
-        this.used = 0;
-        this.length = 1024;
-        this.content = new byte[1024];
-    }
-
     public void sdsClear() {
-        this.used = 0;
+        setUsed(0);
     }
 
     public void sdsToLower() {
@@ -138,16 +113,19 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     }
 
     public SDS toLower() {
-        byte[] bytes = new byte[this.used];
-        for (int i = 0;i < bytes.length;i ++) {
+        int used = getUsed();
+        byte[] bytes = new byte[used + 8];
+        for (int i = 8; i < bytes.length; i++) {
             if (content[i] >= 'A' && content[i] <= 'Z') {
-                bytes[i] = (byte) (content[i]+ 0x20);
-            }
-            else {
+                bytes[i] = (byte) (content[i] + 0x20);
+            } else {
                 bytes[i] = content[i];
             }
         }
-        return new SDS(bytes);
+        System.arraycopy(content,0,bytes,0,8);
+        SDS sds = new SDS();
+        sds.setBytes(bytes);
+        return sds;
     }
 
     public void sdsToUpper() {
@@ -158,15 +136,19 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     }
 
     public int getLength() {
-        return length;
+        byte[] buffer = new byte[4];
+        System.arraycopy(content,0,buffer,0,4);
+        return IntegerUtil.complementArrayToInt(buffer);
     }
 
     public int getUsed() {
-        return used;
+        byte[] buffer = new byte[4];
+        System.arraycopy(content,4,buffer,0,4);
+        return IntegerUtil.complementArrayToInt(buffer);
     }
 
     public String getContent() {
-        return new String(this.content, 0, this.used);
+        return new String(this.content, 8, getUsed());
     }
 
     public byte[] getBytes() {
@@ -174,29 +156,31 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     }
 
     public void setBytes(byte[] content) {
-        this.length = content.length;
         this.content = content;
-        this.used = content.length;
     }
 
-    public void setUsed(int used) {
-        this.used = used;
-    }
 
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof SDS)) {
             return false;
         }
-        if (((SDS) obj).used != this.used) {
+        if (((SDS) obj).getUsed() != this.getUsed()) {
             return false;
         }
-        for (int i = 0; i < used; i++) {
-            if (content[i] != ((SDS) obj).getBytes()[i]) {
+        for (int i = 0; i < getUsed(); i++) {
+            if (content[i+8] != ((SDS) obj).getBytes()[i+8]) {
                 return false;
             }
         }
         return true;
+    }
+
+    public byte[] getContentBytes() {
+        int used = getUsed();
+        byte[] bytes = new  byte[used];
+        System.arraycopy(content,8,bytes,0,used);
+        return bytes;
     }
 
     @Override
@@ -207,10 +191,10 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
     @Override
     public Object cloneDeep() {
         SDS sds = new SDS();
-        sds.length = this.length;
-        sds.used = this.used;
-        sds.content = new byte[sds.length];
-        for (int i = 0; i < sds.length; i++) {
+        sds.setLength(getLength());
+        sds.setUsed(getUsed());
+        sds.content = new byte[sds.getLength()];
+        for (int i = 0; i < sds.getLength(); i++) {
             sds.content[i] = this.content[i];
         }
         return sds;
@@ -224,13 +208,13 @@ public class SDS implements RedisClonable, Comparable<SDS>, Serializable {
         if (sds.content == null) {
             return -1;
         }
-        if (sds.used > this.used) {
+        if (sds.getUsed() > this.getUsed()) {
             return -1;
-        } else if (sds.used < this.used) {
+        } else if (sds.getUsed() < this.getUsed()) {
             return 1;
         }
-        if (sds.used == this.used) {
-            for (int i = 0; i < this.used; i++) {
+        if (sds.getUsed() == this.getUsed()) {
+            for (int i = 0; i < this.getUsed(); i++) {
                 if (sds.content[i] != this.content[i]) {
                     if (this.content[i] > sds.content[i]) {
                         return 1;

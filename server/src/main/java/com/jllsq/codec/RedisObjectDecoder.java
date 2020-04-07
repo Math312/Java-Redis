@@ -1,8 +1,8 @@
 package com.jllsq.codec;
 
+import com.jllsq.codec.protocol.RedisProtocolParser;
 import com.jllsq.common.entity.RedisClient;
-import com.jllsq.holder.RedisServerObjectHolder;
-import com.jllsq.log.RedisAofLog;
+import com.jllsq.holder.client.RedisServerClientHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -29,8 +29,20 @@ public class RedisObjectDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         try {
-            RedisServerObjectHolder holder = RedisServerObjectHolder.getInstance();
-            out.addAll(RedisAofLog.redisClients(in));
+            RedisServerClientHolder clientHolder = RedisServerClientHolder.getInstance();
+            String key = ctx.channel().id().asLongText();
+            RedisClient redisClient = clientHolder.getClient(key);
+            if (redisClient == null) {
+                redisClient = RedisProtocolParser.readProtocolToNewRedisClient(in);
+                clientHolder.putClient(key, redisClient);
+            } else {
+                redisClient = RedisProtocolParser.readProtocolToExistedRedisClient(in,redisClient);
+            }
+            if (redisClient != null) {
+                out.add(redisClient);
+            } else {
+                clientHolder.removeClient(key);
+            }
         } catch (IndexOutOfBoundsException e) {
             in.resetReaderIndex();
         }

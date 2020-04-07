@@ -16,7 +16,9 @@ import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
 import com.jllsq.holder.RedisServerDbHolder;
 import com.jllsq.holder.RedisServerEventLoopHolder;
+import com.jllsq.holder.RedisServerObjectHolder;
 import com.jllsq.holder.RedisServerStateHolder;
+import com.jllsq.holder.client.RedisServerClientHolder;
 import com.jllsq.log.RedisAofLog;
 import com.jllsq.log.RedisLog;
 import io.netty.bootstrap.ServerBootstrap;
@@ -144,6 +146,8 @@ public class RedisServer {
             ScheduledFuture<?> scheduledFuture = group.scheduleAtFixedRate(
                     () -> {
                         cronLoops++;
+                        RedisServerObjectHolder redisServerObjectHolder  =RedisServerObjectHolder.getInstance();
+                        RedisServerClientHolder redisServerClientHolder = RedisServerClientHolder.getInstance();
                         RedisDb[] db = RedisServerDbHolder.getInstance().getDb();
                         RedisServerStateHolder.getInstance().updateUnixTime();
                         for (int i = 0; i < db.length; i++) {
@@ -154,14 +158,18 @@ public class RedisServer {
                             if (cronLoops % 5 == 0 && (used > 0 || vkeys > 0)) {
                                 try {
                                     RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE, "DB %d: %d keys (%d volatile) in %d slots HT.", i, used, vkeys, size);
+                                    RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE, "FreeList size: %d",
+                                            redisServerObjectHolder.getFreeListSize());
+                                    RedisLog.getInstance().log(RedisLog.LOG_LEVEL_VERBOSE, "Active clients num: %d",
+                                            redisServerClientHolder.getSize());
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
                             }
                         }
-                        for (int i = 0;i < db.length;i ++) {
+                        for (RedisDb redisDb : db) {
                             int expired = 0;
-                            Dict<RedisObject,RedisObject> expires = db[i].getExpires();
+                            Dict<RedisObject, RedisObject> expires = redisDb.getExpires();
                             do {
                                 int num = expires.getUsed();
                                 long time = RedisServerStateHolder.getInstance().getUnixTime();
@@ -169,21 +177,21 @@ public class RedisServer {
                                 if (num > REDIS_EXPIRELOOKUPS_PER_CRON) {
                                     num = REDIS_EXPIRELOOKUPS_PER_CRON;
                                 }
-                                while (num -- > 0) {
-                                    DictEntry<RedisObject,RedisObject> entry = expires.dictGetRandomKey();
-                                    if (entry == null){
+                                while (num-- > 0) {
+                                    DictEntry<RedisObject, RedisObject> entry = expires.dictGetRandomKey();
+                                    if (entry == null) {
                                         break;
                                     } else {
-                                        long expireTime = (long)(entry.getValue().getPtr());
+                                        long expireTime = (long) (entry.getValue().getPtr());
                                         if (expireTime < time) {
-                                            DictEntry<RedisObject,RedisObject> dataEntry = null;
-                                            dataEntry = db[i].getDict().delete(entry.getKey());
+                                            DictEntry<RedisObject, RedisObject> dataEntry = null;
+                                            dataEntry = redisDb.getDict().delete(entry.getKey());
                                             dataEntry.getKey().destructor();
                                             dataEntry.getValue().destructor();
                                             dataEntry = expires.delete(entry.getKey());
                                             dataEntry.getKey().destructor();
                                             dataEntry.getValue().destructor();
-                                            expired ++;
+                                            expired++;
                                         }
                                     }
                                 }

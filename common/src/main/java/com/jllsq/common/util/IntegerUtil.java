@@ -1,5 +1,7 @@
 package com.jllsq.common.util;
 
+import java.nio.ByteBuffer;
+
 import static com.jllsq.config.Constants.*;
 
 /**
@@ -7,6 +9,19 @@ import static com.jllsq.config.Constants.*;
  */
 public class IntegerUtil {
 
+
+    public byte[] intToComplementArray(int num) {
+        byte[] result = new byte[4];
+        result[0] = (byte) ((num >> 24) & 0xFF);
+        result[1] = (byte) ((num >> 16) & 0xFF);
+        result[2] = (byte) ((num >> 8) & 0xFF);
+        result[3] = (byte) (num & 0xFF);
+        return result;
+    }
+
+    public static int complementArrayToInt(byte[] byteArray) {
+        return ByteBuffer.wrap(byteArray).getInt();
+    }
 
 
     public static boolean byteIsInt(byte[] bytes) {

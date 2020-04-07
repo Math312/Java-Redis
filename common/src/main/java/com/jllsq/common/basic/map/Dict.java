@@ -13,7 +13,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>, Serializable {
     private int size;
     private int sizeMask;
     private int used;
-    private Object privateData;
+//    private Object privateData;
     private  static final int INIT_SIZE = 4;
 
     public <U,T> Dict(Object privateData){
@@ -21,7 +21,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>, Serializable {
         this.size = 4;
         this.sizeMask = this.size - 1;
         this.used = 0;
-        this.privateData = privateData;
+//        this.privateData = privateData;
     }
 
     @Override

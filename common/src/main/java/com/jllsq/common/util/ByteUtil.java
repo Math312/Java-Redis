@@ -1,6 +1,6 @@
 package com.jllsq.common.util;
 
-import static com.jllsq.config.Constants.*;
+import com.jllsq.config.Constants;
 
 public class ByteUtil {
 
@@ -9,11 +9,11 @@ public class ByteUtil {
             return false;
         }
         int start = 0;
-        if (bytes[0] == SUB) {
+        if (bytes[0] == Constants.SUB) {
             start = 1;
         }
         for (int i = start;i < bytes.length;i ++) {
-            if (bytes[i] > NINE_CHAR || bytes[i] < ZERO_CHAR){
+            if (bytes[i] > Constants.NINE_CHAR || bytes[i] < Constants.ZERO_CHAR){
                 return false;
             }
         }
@@ -25,11 +25,11 @@ public class ByteUtil {
             return false;
         }
         int start = 0;
-        if (bytes[0] == SUB) {
+        if (bytes[0] == Constants.SUB) {
             start = 1;
         }
         for (int i = start;i < length;i ++) {
-            if (bytes[i] > NINE_CHAR || bytes[i] < ZERO_CHAR){
+            if (bytes[i] > Constants.NINE_CHAR || bytes[i] < Constants.ZERO_CHAR){
                 return false;
             }
         }
@@ -42,7 +42,7 @@ public class ByteUtil {
         }
         long result = 0;
         int start = 0;
-        if (bytes[0] == SUB) {
+        if (bytes[0] == Constants.SUB) {
             start = 1;
         }
         for (int i = start;i < length;i ++) {

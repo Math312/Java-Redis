@@ -40,7 +40,7 @@ public class IncrCommand extends RedisCommand {
                 if (object.getType() == REDIS_STRING) {
                     SDS sds = ((SDS)object.getPtr());
                     try {
-                        long num = ByteUtil.byteToLong(sds.getBytes(),sds.getUsed());
+                        long num = ByteUtil.byteToLong(sds.getContentBytes(),sds.getUsed());
                         num += 1;
                         sds.setBytes(LongUtils.longToBytes(num));
                         result = new RedisObject();

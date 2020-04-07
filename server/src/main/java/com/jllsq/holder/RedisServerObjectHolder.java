@@ -61,6 +61,10 @@ public class RedisServerObjectHolder {
         return result;
     }
 
+    public int getFreeListSize() {
+        return freeList.size();
+    }
+
     public void deleteObject(RedisObject object) {
         this.freeList.add(object);
     }

@@ -23,7 +23,7 @@ public class RedisServerClientHolder {
     }
 
     private RedisServerClientHolder() {
-        this.clients = new HashMap<>();
+        this.clients = new HashMap<>(16);
     }
 
     public void putClient(String key,RedisClient client) {
@@ -36,5 +36,9 @@ public class RedisServerClientHolder {
 
     public RedisClient getClient(String key) {
         return clients.get(key);
+    }
+
+    public int getSize() {
+        return this.clients.size();
     }
 }

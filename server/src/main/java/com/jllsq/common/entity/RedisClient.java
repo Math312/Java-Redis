@@ -19,4 +19,9 @@ public class RedisClient {
 
     }
 
+    public void clearArgs() {
+        this.argc = 0;
+        this.argv = null;
+    }
+
 }

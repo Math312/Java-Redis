@@ -32,7 +32,8 @@ public class KeysCommand extends RedisCommand {
         while (iterator.hasNext()) {
             DictEntry<RedisObject,RedisObject> entry = iterator.next();
             SDS stringSds = ((SDS)entry.getKey().getPtr());
-            if (GlobUtil.match(stringSds.getBytes(),stringSds.getUsed(),patternSds.getBytes(),patternSds.getUsed())) {
+            if (GlobUtil.match(stringSds.getContentBytes(),stringSds.getUsed(),patternSds.getContentBytes(),
+                    patternSds.getUsed())) {
                 list.addLast((SDS) entry.getKey().getPtr());
             }
         }

@@ -24,7 +24,7 @@ public class SelectCommand extends RedisCommand {
         SDS sds = (SDS) client.getArgv()[1].getPtr();
         int index = 0;
         try {
-            index = IntegerUtil.bytesToInt(sds.getBytes(),0,sds.getUsed());
+            index = IntegerUtil.bytesToInt(sds.getContentBytes(),0,sds.getUsed());
             if (index < 0 || index >= RedisServerDbHolder.getInstance().getDbNum()) {
                 throw new IllegalArgumentException();
             }
