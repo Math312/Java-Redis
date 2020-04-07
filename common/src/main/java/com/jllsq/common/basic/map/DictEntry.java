@@ -1,56 +1,46 @@
 package com.jllsq.common.basic.map;
 
+public class DictEntry {
 
-import java.io.Serializable;
+    private Object key;
+    private Object value;
+    private DictEntry next;
 
-public class DictEntry<U,T> implements Cloneable, Serializable {
-
-    private static final long serialVersionUID = 5599475723267601562L;
-
-    private U key;
-    private T value;
-    private DictEntry<U,T> next;
-
-    public DictEntry(U key, T value) {
+    public DictEntry(Object key, Object value) {
         this.key = key;
         this.value = value;
         this.next = null;
     }
 
-    public DictEntry(U key, T value,DictEntry<U,T> nextEntry) {
+    public DictEntry(Object key, Object value,DictEntry nextEntry) {
         this.key = key;
         this.value = value;
         this.next = nextEntry;
     }
 
 
-    public U getKey() {
+    public Object getKey() {
         return key;
     }
 
-    public void setKey(U key) {
+    public void setKey(Object key) {
         this.key = key;
     }
 
-    public T getValue() {
+    public Object getValue() {
         return value;
     }
 
-    public void setValue(T value) {
+    public void setValue(Object value) {
         this.value = value;
     }
 
-    public DictEntry<U, T> getNext() {
+    public DictEntry getNext() {
         return next;
     }
 
-    public void setNext(DictEntry<U, T> next) {
+    public void setNext(DictEntry next) {
         this.next = next;
     }
 
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        DictEntry<U,T> dictEntry = new DictEntry(this.getKey(),this.getValue());
-        return dictEntry;
-    }
 }

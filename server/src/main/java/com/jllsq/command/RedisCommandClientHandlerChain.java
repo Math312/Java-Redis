@@ -4,6 +4,7 @@ import com.jllsq.command.handler.RedisCommandClientHandler;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,9 +23,7 @@ public class RedisCommandClientHandlerChain {
         if (handlers == null) {
             throw new IllegalArgumentException("Handler must not be null!");
         }
-        for (int i = 0; i < handlers.length; i++) {
-            this.handlers.add(handlers[i]);
-        }
+        this.handlers.addAll(Arrays.asList(handlers));
         this.iterator = this.handlers.iterator();
     }
 

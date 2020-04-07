@@ -5,42 +5,34 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Random;
 
-public class Dict<U,T> implements Iterable<DictEntry<U,T>>, Serializable {
+public class Dict implements Iterable<DictEntry>, Serializable {
 
     private static final long serialVersionUID = 7887265299375772551L;
 
-    private DictEntry<U,T>[] table;
+    private DictEntry[] table;
+    private DictEntry[] table2;
     private int size;
     private int sizeMask;
     private int used;
-//    private Object privateData;
     private  static final int INIT_SIZE = 4;
 
-    public <U,T> Dict(Object privateData){
-        this.table = new DictEntry[4];
-        this.size = 4;
-        this.sizeMask = this.size - 1;
-        this.used = 0;
-//        this.privateData = privateData;
-    }
-
     @Override
-    public Iterator<DictEntry<U,T>> iterator() {
+    public Iterator<DictEntry> iterator() {
         return new DictEntryIterator<>(this);
     }
 
     public Dict expand(int size) {
         DictEntry[] temp = new DictEntry[size];
-        Dict<U,T> dict = SerializationUtils.clone(this);
+        Dict dict = SerializationUtils.clone(this);
         int sizeMask = size - 1;
-        for (DictEntry<U, T> dictEntry : dict) {
+        for (DictEntry dictEntry : dict) {
             try {
-                DictEntry<U, T> newEntry = (DictEntry<U, T>) dictEntry.clone();
+                DictEntry newEntry = (DictEntry) dictEntry.clone();
                 int hash2 = hashFunction(dictEntry.getKey()) & sizeMask;
                 if (temp[hash2] == null) {
                     temp[hash2] = newEntry;
                 } else {
-                    DictEntry<U, T> tempEntry = temp[hash2];
+                    DictEntry tempEntry = temp[hash2];
                     temp[hash2] = ((DictEntry) (newEntry));
                     temp[hash2].setNext(tempEntry);
                 }
@@ -157,13 +149,13 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>, Serializable {
 
 
 
-    public class DictEntryIterator<U,T> implements Iterator<DictEntry<U,T>> {
+    public class DictEntryIterator implements Iterator<DictEntry> {
 
         private int index = -1;
         private int walked = 0;
-        private DictEntry<U,T> entry = null;
-        private Dict<U,T> dict;
-        public <U,T> DictEntryIterator(Dict dict){
+        private DictEntry entry = null;
+        private Dict dict;
+        public DictEntryIterator(Dict dict){
             this.dict = dict;
         }
 
@@ -173,7 +165,7 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>, Serializable {
         }
 
         @Override
-        public DictEntry<U, T> next() {
+        public DictEntry next() {
             if (entry != null && entry.getNext() != null) {
                 entry = entry.getNext();
                 walked ++;
@@ -191,8 +183,8 @@ public class Dict<U,T> implements Iterable<DictEntry<U,T>>, Serializable {
         }
     }
 
-    public DictEntry<U,T> dictGetRandomKey() {
-        DictEntry<U,T> result = null;
+    public DictEntry dictGetRandomKey() {
+        DictEntry result = null;
         if (this.used == 0) {
             return null;
         }
