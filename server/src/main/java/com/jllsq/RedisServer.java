@@ -10,7 +10,6 @@ import com.jllsq.common.basic.map.DictEntry;
 import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
-import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.entity.SaveParam;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
@@ -90,7 +89,7 @@ public class RedisServer {
     private Date unixTime;
 
     private int port;
-    private Dict<SDS, Object> sharingPool;
+    private Dict sharingPool;
     private List clients;
     private Date lastSave;
     private Date stateStartTime;
@@ -169,7 +168,7 @@ public class RedisServer {
                         }
                         for (RedisDb redisDb : db) {
                             int expired = 0;
-                            Dict<RedisObject, RedisObject> expires = redisDb.getExpires();
+                            Dict expires = redisDb.getExpires();
                             do {
                                 int num = expires.getUsed();
                                 long time = RedisServerStateHolder.getInstance().getUnixTime();
@@ -178,19 +177,19 @@ public class RedisServer {
                                     num = REDIS_EXPIRELOOKUPS_PER_CRON;
                                 }
                                 while (num-- > 0) {
-                                    DictEntry<RedisObject, RedisObject> entry = expires.dictGetRandomKey();
+                                    DictEntry entry = expires.dictGetRandomKey();
                                     if (entry == null) {
                                         break;
                                     } else {
                                         long expireTime = (long) (entry.getValue().getPtr());
                                         if (expireTime < time) {
-                                            DictEntry<RedisObject, RedisObject> dataEntry = null;
+                                            DictEntry dataEntry = null;
                                             dataEntry = redisDb.getDict().delete(entry.getKey());
-                                            dataEntry.getKey().destructor();
-                                            dataEntry.getValue().destructor();
                                             dataEntry = expires.delete(entry.getKey());
-                                            dataEntry.getKey().destructor();
-                                            dataEntry.getValue().destructor();
+                                            redisServerObjectHolder.deleteObject(dataEntry.getKey());
+                                            redisServerObjectHolder.deleteObject(dataEntry.getValue());
+                                            redisServerObjectHolder.deleteObject(dataEntry.getKey());
+                                            redisServerObjectHolder.deleteObject(dataEntry.getValue());
                                             expired++;
                                         }
                                     }

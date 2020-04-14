@@ -1,37 +1,39 @@
 package com.jllsq.common.basic.map;
 
+import com.jllsq.common.entity.RedisObject;
+
 public class DictEntry {
 
-    private Object key;
-    private Object value;
+    private RedisObject key;
+    private RedisObject value;
     private DictEntry next;
 
-    public DictEntry(Object key, Object value) {
+    public DictEntry(RedisObject key, RedisObject value) {
         this.key = key;
         this.value = value;
         this.next = null;
     }
 
-    public DictEntry(Object key, Object value,DictEntry nextEntry) {
+    public DictEntry(RedisObject key, RedisObject value,DictEntry nextEntry) {
         this.key = key;
         this.value = value;
         this.next = nextEntry;
     }
 
 
-    public Object getKey() {
+    public RedisObject getKey() {
         return key;
     }
 
-    public void setKey(Object key) {
+    public void setKey(RedisObject key) {
         this.key = key;
     }
 
-    public Object getValue() {
+    public RedisObject getValue() {
         return value;
     }
 
-    public void setValue(Object value) {
+    public void setValue(RedisObject value) {
         this.value = value;
     }
 

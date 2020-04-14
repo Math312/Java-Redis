@@ -1,5 +1,6 @@
 package com.jllsq.common.basic.map;
-import org.apache.commons.lang3.SerializationUtils;
+
+import com.jllsq.common.entity.RedisObject;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -10,38 +11,49 @@ public class Dict implements Iterable<DictEntry>, Serializable {
     private static final long serialVersionUID = 7887265299375772551L;
 
     private DictEntry[] table;
-    private DictEntry[] table2;
+//    private DictEntry[] table2;
+//    private volatile boolean expanding = false;
     private int size;
     private int sizeMask;
     private int used;
-    private  static final int INIT_SIZE = 4;
+    private  static final int INIT_SIZE = 2;
+
+    public Dict() {
+        table = new DictEntry[INIT_SIZE];
+        size = INIT_SIZE;
+        sizeMask = size - 1;
+        used = 0;
+    }
 
     @Override
     public Iterator<DictEntry> iterator() {
-        return new DictEntryIterator<>(this);
+        return new DictEntryIterator(this);
     }
 
     public Dict expand(int size) {
         DictEntry[] temp = new DictEntry[size];
-        Dict dict = SerializationUtils.clone(this);
+        DictEntry[] dict = this.table;
         int sizeMask = size - 1;
-        for (DictEntry dictEntry : dict) {
-            try {
-                DictEntry newEntry = (DictEntry) dictEntry.clone();
-                int hash2 = hashFunction(dictEntry.getKey()) & sizeMask;
-                if (temp[hash2] == null) {
-                    temp[hash2] = newEntry;
-                } else {
-                    DictEntry tempEntry = temp[hash2];
-                    temp[hash2] = ((DictEntry) (newEntry));
-                    temp[hash2].setNext(tempEntry);
+        for (int i = 0;i < dict.length;i ++) {
+            DictEntry head = dict[i];
+            if (head != null) {
+                DictEntry tempEntry = head;
+                while (tempEntry != null) {
+                    DictEntry nexEntry = tempEntry.getNext();
+                    int hash = hashFunction(tempEntry.getKey()) & sizeMask;
+                    DictEntry existedEntry = temp[hash];
+                    if (existedEntry == null) {
+                        tempEntry.setNext(null);
+                        temp[hash] = tempEntry;
+                    } else {
+                        tempEntry.setNext(existedEntry);
+                        temp[hash] = tempEntry;
+                    }
+                    tempEntry = nexEntry;
                 }
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
             }
         }
         this.table = temp;
-        dict = null;
         this.sizeMask = sizeMask;
         this.size = size;
         return this;
@@ -51,6 +63,7 @@ public class Dict implements Iterable<DictEntry>, Serializable {
         if (this.size == Integer.MAX_VALUE) {
             return false;
         }
+
         if (this.size == 0) {
             expand(INIT_SIZE);
         } else if (this.size == this.used) {
@@ -63,7 +76,7 @@ public class Dict implements Iterable<DictEntry>, Serializable {
         return true;
     }
 
-    public boolean add(U key, T value) {
+    public boolean add(RedisObject key, RedisObject value) {
         if (this.size == Integer.MAX_VALUE) {
             return false;
         }
@@ -72,21 +85,23 @@ public class Dict implements Iterable<DictEntry>, Serializable {
             return true;
         }
         expandIfNecessary();
+//        System.out.println("Ready to Expand");
         int hash = hashFunction(key) & sizeMask;
-        DictEntry<U,T> entry = table[hash];
-        DictEntry<U,T> newEntry = null;
+        DictEntry entry = table[hash];
+        DictEntry newEntry = null;
+//        System.out.println("Ready to Add To map");
         if (entry == null){
-            newEntry = new DictEntry<>(key,value);
+            newEntry = new DictEntry(key,value);
         }else {
-            newEntry = new DictEntry<>(key,value,entry);
+            newEntry = new DictEntry(key,value,entry);
         }
         table[hash] = newEntry;
         this.used ++;
         return true;
     }
 
-    public boolean replace(U key, T value) {
-        DictEntry<U,T> dictEntry = find(key);
+    public boolean replace(RedisObject key, RedisObject value) {
+        DictEntry dictEntry = find(key);
         if (dictEntry != null) {
             dictEntry.setValue(value);
             return true;
@@ -94,10 +109,10 @@ public class Dict implements Iterable<DictEntry>, Serializable {
         return false;
     }
 
-    public DictEntry<U,T> delete(U key) {
+    public DictEntry delete(Object key) {
         int hash = hashFunction(key);
-        DictEntry<U,T> entry = table[hash];
-        DictEntry<U,T> last = null;
+        DictEntry entry = table[hash];
+        DictEntry last = null;
         while (entry != null) {
             if (key.equals(entry.getKey())){
                 if (last == null) {
@@ -115,9 +130,9 @@ public class Dict implements Iterable<DictEntry>, Serializable {
         return null;
     }
 
-    public DictEntry<U, T> find(U key) {
+    public DictEntry find(Object key) {
         int hash = hashFunction(key) & sizeMask;
-        DictEntry<U,T> entry = table[hash];
+        DictEntry entry = table[hash];
         while (entry != null) {
             if (key.equals(entry.getKey())){
                 return entry;
@@ -135,7 +150,7 @@ public class Dict implements Iterable<DictEntry>, Serializable {
     }
 
 
-    public int hashFunction(U key) {
+    public int hashFunction(Object key) {
         return key.hashCode() & sizeMask;
     }
 

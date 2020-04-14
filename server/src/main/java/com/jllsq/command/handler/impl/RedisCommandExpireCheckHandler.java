@@ -8,6 +8,7 @@ import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.config.Shared;
+import com.jllsq.holder.RedisServerObjectHolder;
 import com.jllsq.holder.RedisServerStateHolder;
 
 /**
@@ -17,18 +18,18 @@ public class RedisCommandExpireCheckHandler implements RedisCommandClientHandler
 
     public boolean expireIfNeed(RedisDb db, RedisObject key) {
         long time = RedisServerStateHolder.getInstance().getUnixTime();
-        DictEntry<RedisObject, RedisObject> entry = db.getExpires().find(key);
+        DictEntry entry = db.getExpires().find(key);
         if (entry == null) {
             return false;
         } else {
             long expireTime = (long) entry.getValue().getPtr();
             if (expireTime < time) {
-                DictEntry<RedisObject, RedisObject> dataEntry = db.getExpires().delete(key);
-                dataEntry.getKey().destructor();
-                dataEntry.getValue().destructor();
-                DictEntry<RedisObject, RedisObject> expireEntry = db.getDict().delete(key);
-                expireEntry.getKey().destructor();
-                expireEntry.getValue().destructor();
+                RedisServerObjectHolder objectHolder = RedisServerObjectHolder.getInstance();
+                DictEntry dataEntry = db.getExpires().delete(key);
+                DictEntry expireEntry = db.getDict().delete(key);
+                objectHolder.deleteObject(dataEntry.getKey());
+                objectHolder.deleteObject(expireEntry.getKey());
+                objectHolder.deleteObject(expireEntry.getValue());
                 return true;
             }
             return false;

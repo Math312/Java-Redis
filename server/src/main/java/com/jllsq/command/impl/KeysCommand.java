@@ -26,11 +26,11 @@ public class KeysCommand extends RedisCommand {
     @Override
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
-        Iterator<DictEntry<RedisObject,RedisObject>> iterator =  db.getDict().iterator();
+        Iterator<DictEntry> iterator =  db.getDict().iterator();
         SDS patternSds = ((SDS)(client.getArgv()[1].getPtr()));
         List<SDS> list = new List<>();
         while (iterator.hasNext()) {
-            DictEntry<RedisObject,RedisObject> entry = iterator.next();
+            DictEntry entry = iterator.next();
             SDS stringSds = ((SDS)entry.getKey().getPtr());
             if (GlobUtil.match(stringSds.getContentBytes(),stringSds.getUsed(),patternSds.getContentBytes(),
                     patternSds.getUsed())) {

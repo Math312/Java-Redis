@@ -11,6 +11,7 @@ import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.config.Shared;
+import com.jllsq.holder.RedisServerObjectHolder;
 import com.jllsq.holder.RedisServerStateHolder;
 
 public class DelCommand extends RedisCommand {
@@ -21,15 +22,16 @@ public class DelCommand extends RedisCommand {
 
     @Override
     public RedisObject process(RedisClient client) {
+        RedisServerObjectHolder redisServerObjectHolder = RedisServerObjectHolder.getInstance();
         RedisDb db = client.getDb();
-        DictEntry<RedisObject,RedisObject> dataEntry = null;
+        DictEntry dataEntry = null;
         if ((dataEntry = db.getDict().delete(client.getArgv()[1]))!= null ) {
-            dataEntry.getValue().destructor();
-            dataEntry.getKey().destructor();
+            redisServerObjectHolder.deleteObject(dataEntry.getValue());
+            redisServerObjectHolder.deleteObject(dataEntry.getKey());
             dataEntry = db.getExpires().delete(client.getArgv()[1]);
             if (dataEntry != null) {
-                dataEntry.getValue().destructor();
-                dataEntry.getKey().destructor();
+                redisServerObjectHolder.deleteObject(dataEntry.getValue());
+                redisServerObjectHolder.deleteObject(dataEntry.getKey());
             }
             RedisServerStateHolder.getInstance().incrDirty();
         } else {

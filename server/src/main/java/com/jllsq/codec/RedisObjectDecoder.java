@@ -43,6 +43,7 @@ public class RedisObjectDecoder extends ByteToMessageDecoder {
             } else {
                 clientHolder.removeClient(key);
             }
+//            System.out.println(out);
         } catch (IndexOutOfBoundsException e) {
             in.resetReaderIndex();
         }

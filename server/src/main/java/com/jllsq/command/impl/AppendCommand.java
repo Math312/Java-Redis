@@ -23,7 +23,7 @@ public class AppendCommand extends RedisCommand {
     @Override
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
-        DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
+        DictEntry entry = db.getDict().find(client.getArgv()[1]);
         if (entry == null) {
             RedisObject key = SerializationUtils.clone(client.getArgv()[1]);
             RedisObject value = SerializationUtils.clone(client.getArgv()[2]);

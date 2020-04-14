@@ -11,7 +11,6 @@ import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.config.Shared;
 import com.jllsq.holder.RedisServerStateHolder;
-import org.apache.commons.lang3.SerializationUtils;
 
 public class SetCommand extends RedisCommand {
     public SetCommand() {
@@ -22,10 +21,12 @@ public class SetCommand extends RedisCommand {
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
         RedisObject result = null;
-        RedisObject key = SerializationUtils.clone(client.getArgv()[1]);
-        RedisObject value = SerializationUtils.clone(client.getArgv()[2]);
+        RedisObject key = client.getArgv()[1];
+        RedisObject value = client.getArgv()[2];
+//        System.out.println("Ready to Add"+client);
         if (db.getDict().add(key,value)) {
-            db.getExpires().delete(client.getArgv()[1]);
+//            System.out.println("Add"+client);
+            db.getExpires().delete(key);
             result = Shared.getInstance().getOk();
         } else {
             result = Shared.getInstance().getCzero();

@@ -18,9 +18,10 @@ public class BasicRedisCommandProcessor implements RedisCommandProcessor {
             RedisCommandClientHandlerChain chain = command.getHandlerChain();
             chain.init();
             RedisObject result =  chain.doHandle(client,command);
-            for (int i = 0;i < client.getArgv().length;i ++) {
-                client.getArgv()[i].destructor();
-            }
+//            RedisServerObjectHolder redisServerObjectHolder = RedisServerObjectHolder.getInstance();
+//            for (int i = 0;i < client.getArgv().length;i ++) {
+//                redisServerObjectHolder.deleteObject(client.getArgv()[i]);
+//            }
             return result;
         } else {
             return Shared.getInstance().getSyntaxerr();

@@ -24,7 +24,7 @@ public class DecrCommand extends RedisCommand {
 
     @Override
     public RedisObject process(RedisClient client) {
-        DictEntry<RedisObject,RedisObject> value = client.getDb().getDict().find(client.getArgv()[1]);
+        DictEntry value = client.getDb().getDict().find(client.getArgv()[1]);
         RedisObject result = null;
         if (value == null) {
             result = Shared.getInstance().getNokeyerr();

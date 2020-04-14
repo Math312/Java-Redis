@@ -1,6 +1,5 @@
 package com.jllsq.common.entity;
 
-import com.jllsq.holder.RedisServerObjectHolder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -25,10 +24,6 @@ public class RedisObject implements Cloneable,Comparable<RedisObject>, Serializa
         this.ptr = ptr;
         this.encoding = encoding;
         this.refCount = 1;
-    }
-
-    public void destructor() {
-        RedisServerObjectHolder.getInstance().deleteObject(this);
     }
 
     @Override

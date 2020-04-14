@@ -19,7 +19,7 @@ public class ExistsCommand extends RedisCommand {
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
         RedisObject result = null;
-        DictEntry<RedisObject, RedisObject> entry = db.getDict().find(client.getArgv()[1]);
+        DictEntry entry = db.getDict().find(client.getArgv()[1]);
         if (entry != null) {
             result = Shared.getInstance().getCone();
         } else {

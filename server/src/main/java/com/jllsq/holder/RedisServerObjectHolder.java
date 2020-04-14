@@ -66,7 +66,9 @@ public class RedisServerObjectHolder {
     }
 
     public void deleteObject(RedisObject object) {
-        this.freeList.add(object);
+        if (!freeList.contains(object)) {
+            this.freeList.add(object);
+        }
     }
 
     public static RedisServerObjectHolder getInstance() {

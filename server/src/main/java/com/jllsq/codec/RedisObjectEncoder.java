@@ -20,6 +20,7 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
             return;
         }
         Object ptr = msg.getPtr();
+//        System.out.println(msg);
         if (msg.getEncoding() == REDIS_ENCODING_RAW) {
             if (msg.isShared()){
                 byte[] content = ((SDS)ptr).getBytes();

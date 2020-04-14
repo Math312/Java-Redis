@@ -5,15 +5,15 @@ import lombok.Data;
 
 @Data
 public class RedisDb {
-    private Dict<RedisObject,RedisObject> dict;
-    private Dict<RedisObject,RedisObject> expires;
-    private Dict<RedisObject,RedisObject> blockKeys;
+    private Dict dict;
+    private Dict expires;
+    private Dict blockKeys;
     private int id;
 
     public RedisDb(int id) {
         this.id = id;
-        this.dict = new Dict<>(null);
-        this.expires = new Dict<>(null);
-        this.blockKeys = new Dict<>(null);
+        this.dict = new Dict();
+        this.expires = new Dict();
+        this.blockKeys = new Dict();
     }
 }

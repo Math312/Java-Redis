@@ -3,10 +3,12 @@ package com.jllsq.common.entity;
 import io.netty.channel.Channel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.ToString;
 
 
 @Data
 @AllArgsConstructor
+@ToString
 public class RedisClient {
 
     private Channel channel;
