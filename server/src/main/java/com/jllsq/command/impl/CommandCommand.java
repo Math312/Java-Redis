@@ -21,6 +21,12 @@ public class CommandCommand extends RedisCommand {
         RedisObject result = Shared.getInstance().getOk();
         return result;
     }
+
+    @Override
+    public void recycleRedisObject(RedisClient client) {
+        redisServerObjectHolder.deleteObject(client.getArgv()[0]);
+    }
+
     @Override
     public void initChain() {
         super.initChain();

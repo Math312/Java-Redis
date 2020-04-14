@@ -43,6 +43,11 @@ public class SetnxCommand extends RedisCommand {
     }
 
     @Override
+    public void recycleRedisObject(RedisClient client) {
+        redisServerObjectHolder.deleteObject(client.getArgv()[0]);
+    }
+
+    @Override
     public void initChain() {
         super.initChain();
         handlerChain.add(new RedisCommandInitClientHandler());

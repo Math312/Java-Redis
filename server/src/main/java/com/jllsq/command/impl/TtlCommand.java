@@ -8,6 +8,7 @@ import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.config.Shared;
+import com.jllsq.holder.RedisServerObjectHolder;
 import com.jllsq.holder.RedisServerStateHolder;
 
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_ENCODING_INT;
@@ -15,9 +16,11 @@ import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
 public class TtlCommand  extends RedisCommand {
 
+    private RedisServerObjectHolder redisServerObjectHolder;
 
     public TtlCommand() {
         super(new SDS("ttl"),1);
+        redisServerObjectHolder = RedisServerObjectHolder.getInstance();
     }
 
     @Override
@@ -41,7 +44,7 @@ public class TtlCommand  extends RedisCommand {
 
     @Override
     public void recycleRedisObject(RedisClient client) {
-
+        this.redisServerObjectHolder.deleteObject(client.getArgv()[0]);
     }
 
     @Override

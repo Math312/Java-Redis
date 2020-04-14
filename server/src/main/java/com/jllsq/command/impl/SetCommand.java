@@ -23,9 +23,7 @@ public class SetCommand extends RedisCommand {
         RedisObject result = null;
         RedisObject key = client.getArgv()[1];
         RedisObject value = client.getArgv()[2];
-//        System.out.println("Ready to Add"+client);
         if (db.getDict().add(key,value)) {
-//            System.out.println("Add"+client);
             db.getExpires().delete(key);
             result = Shared.getInstance().getOk();
         } else {
@@ -33,6 +31,11 @@ public class SetCommand extends RedisCommand {
         }
         RedisServerStateHolder.getInstance().incrDirty();
         return result;
+    }
+
+    @Override
+    public void recycleRedisObject(RedisClient client) {
+        redisServerObjectHolder.deleteObject(client.getArgv()[0]);
     }
 
     @Override
