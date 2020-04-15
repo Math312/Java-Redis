@@ -1,5 +1,7 @@
 package com.jllsq.holder;
 
+import java.util.HashMap;
+
 public class RedisServerByteBufferHolder {
 
     final int DEFAULT_COMMON_BUFFER_SIZE = 1024;
@@ -10,11 +12,20 @@ public class RedisServerByteBufferHolder {
 
     private byte[] bigBuffer;
 
+    private byte[] readLineBuffer = new byte[128];
+
+    private HashMap<Integer,>
+
     private RedisServerByteBufferHolder() {
         this.commonBuffer = new byte[DEFAULT_COMMON_BUFFER_SIZE];
     }
 
-    public byte[]  getBuffer(int size) {
+    public byte[] getReadLineBuffer() {
+        return readLineBuffer;
+    }
+
+
+    public byte[]  getRedisClientBufferFromPool(int size) {
         if (size <= 0) {
             throw new IllegalArgumentException();
         }
