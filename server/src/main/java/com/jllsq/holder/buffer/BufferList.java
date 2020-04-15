@@ -1,4 +1,6 @@
-package com.jllsq.holder.buffer.entity;
+package com.jllsq.holder.buffer;
+
+import com.jllsq.holder.buffer.entity.BasicBuffer;
 
 public interface BufferList {
 

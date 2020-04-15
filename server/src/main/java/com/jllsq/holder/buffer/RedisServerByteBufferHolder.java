@@ -1,23 +1,15 @@
-package com.jllsq.holder;
+package com.jllsq.holder.buffer;
 
-import java.util.HashMap;
+import com.jllsq.holder.buffer.entity.BasicBuffer;
 
 public class RedisServerByteBufferHolder {
 
-    final int DEFAULT_COMMON_BUFFER_SIZE = 1024;
-
-    final int DEFAULT_BIG_BUFFER_SIZE = 1024 * 10;
-
-    private byte[] commonBuffer;
-
-    private byte[] bigBuffer;
+    private BufferPool bufferPool;
 
     private byte[] readLineBuffer = new byte[128];
 
-    private HashMap<Integer,>
-
     private RedisServerByteBufferHolder() {
-        this.commonBuffer = new byte[DEFAULT_COMMON_BUFFER_SIZE];
+        this.bufferPool = new HashMapBufferPool();
     }
 
     public byte[] getReadLineBuffer() {
@@ -25,22 +17,15 @@ public class RedisServerByteBufferHolder {
     }
 
 
-    public byte[]  getRedisClientBufferFromPool(int size) {
+    public BasicBuffer getRedisClientBufferFromPool(int size) {
         if (size <= 0) {
             throw new IllegalArgumentException();
         }
-        if (size <= this.DEFAULT_COMMON_BUFFER_SIZE) {
-            return commonBuffer;
-        } else {
-            this.bigBuffer = null;
-            if (size <= this.DEFAULT_BIG_BUFFER_SIZE) {
-                this.bigBuffer =new byte[this.DEFAULT_BIG_BUFFER_SIZE];
-                return this.bigBuffer;
-            } else {
-                this.bigBuffer =new byte[size];
-                return this.bigBuffer;
-            }
-        }
+        return bufferPool.createBuffer(size);
+    }
+
+    public void recycleBuffer(BasicBuffer basicBuffer) {
+        bufferPool.recycleBuffer(basicBuffer);
     }
 
     public static RedisServerByteBufferHolder getInstance() {

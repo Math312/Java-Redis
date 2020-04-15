@@ -3,13 +3,13 @@ package com.jllsq.codec.protocol;
 import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
+import com.jllsq.common.util.config.ByteBufUtil;
 import com.jllsq.holder.RedisServerObjectHolder;
+import com.jllsq.holder.buffer.RedisServerByteBufferHolder;
+import com.jllsq.holder.buffer.entity.BasicBuffer;
 import io.netty.buffer.ByteBuf;
 
-import java.util.Arrays;
-
 import static com.jllsq.common.util.config.ByteArrayUtil.byteArrayToInt;
-import static com.jllsq.common.util.config.ByteBufUtil.readLine;
 import static com.jllsq.config.Constants.*;
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
@@ -28,24 +28,23 @@ public class RedisProtocolParser {
             if (in.readByte() != STAR) {
                 System.out.println("error");
             }
-            byte[] head = readLine(in);
-            if (head[head.length - 2] != CR || head[head.length - 1] != LF) {
+            byte[] readLineBuffer = RedisServerByteBufferHolder.getInstance().getReadLineBuffer();
+            int readLineBufferLength = ByteBufUtil.readLineToExistedBuffer(in,readLineBuffer);
+            if (readLineBuffer[readLineBufferLength - 2] != CR || readLineBuffer[readLineBufferLength - 1] != LF) {
                 System.out.println("error");
             }
-            byte[] num = Arrays.copyOf(head, head.length - 2);
-            int length = byteArrayToInt(num);
+            int length = byteArrayToInt(readLineBuffer,0,readLineBufferLength-2);
             RedisObject[] argv = new RedisObject[length];
             for (int i = 0; i < length; i++) {
                 byte dollar = in.readByte();
                 if (dollar != '$') {
                     System.out.println("error");
                 }
-                byte[] commandArgv = readLine(in);
-                if (commandArgv[commandArgv.length - 2] != CR || commandArgv[commandArgv.length - 1] != LF) {
+                readLineBufferLength = ByteBufUtil.readLineToExistedBuffer(in,readLineBuffer);
+                if (readLineBuffer[readLineBufferLength - 2] != CR || readLineBuffer[readLineBufferLength - 1] != LF) {
                     System.out.println("error");
                 }
-                num = Arrays.copyOf(commandArgv, commandArgv.length - 2);
-                int commandLen = byteArrayToInt(num);
+                int commandLen = byteArrayToInt(readLineBuffer,0,readLineBufferLength-2);
                 ByteBuf command = in.readBytes(commandLen);
                 byte[] buff = new byte[commandLen];
                 command.getBytes(0, buff);
@@ -55,6 +54,12 @@ public class RedisProtocolParser {
                     System.out.println("error");
                 }
             }
+            in.resetReaderIndex();
+            RedisServerByteBufferHolder byteBufferHolder = RedisServerByteBufferHolder.getInstance();
+            BasicBuffer basicBuffer = byteBufferHolder.getRedisClientBufferFromPool(in.writerIndex());
+            in.readBytes(basicBuffer.getBuffer(),0,in.writerIndex());
+            basicBuffer.setUsed(in.writerIndex());
+            rs.setBuffer(basicBuffer);
             rs.setArgc(length);
             rs.setArgv(argv);
         }

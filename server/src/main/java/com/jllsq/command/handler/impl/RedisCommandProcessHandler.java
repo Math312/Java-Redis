@@ -14,7 +14,7 @@ public class RedisCommandProcessHandler implements RedisCommandClientHandler {
     @Override
     public RedisObject handle(RedisClient client, RedisCommand command, RedisCommandClientHandlerChain chain) {
         RedisObject response =  command.process(client);
-//        command.recycleRedisObject(client);
+        command.recycleRedisObject(client);
         return response;
     }
 }

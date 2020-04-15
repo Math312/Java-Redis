@@ -17,4 +17,15 @@ public class ByteBufUtil {
         }while (readByte != '\n');
         return Arrays.copyOf(buff,i);
     }
+
+    public static int readLineToExistedBuffer(ByteBuf in,byte[] buff){
+        byte readByte;
+        int i = 0;
+        do {
+            readByte = in.readByte();
+            buff[i] = readByte;
+            i ++;
+        }while (readByte != '\n');
+        return i;
+    }
 }

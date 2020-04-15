@@ -1,17 +1,20 @@
 package com.jllsq.log;
 
+import com.jllsq.holder.buffer.RedisServerByteBufferHolder;
+import com.jllsq.holder.buffer.entity.BasicBuffer;
+
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class LogContainer extends Thread{
 
     private LinkedBlockingQueue<BasicLog> container;
 
+    private RedisServerByteBufferHolder byteBufferHolder;
+
     private LogContainer() {
         container = new LinkedBlockingQueue<>();
+        this.byteBufferHolder = RedisServerByteBufferHolder.getInstance();
     }
 
     enum LogContainerEnum {
@@ -35,7 +38,9 @@ public class LogContainer extends Thread{
         try {
             while(true) {
                 BasicLog basicLog = container.take();
-                Files.write(Paths.get(basicLog.getFileName()), basicLog.getBytes(), StandardOpenOption.APPEND);
+                BasicBuffer basicBuffer = basicLog.getBuffer();
+                basicLog.getFileOutputStream().write(basicBuffer.getBuffer(),0,basicBuffer.getUsed());
+                byteBufferHolder.recycleBuffer(basicBuffer);
             }
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();

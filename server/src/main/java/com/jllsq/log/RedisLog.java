@@ -1,6 +1,8 @@
 package com.jllsq.log;
 
 import com.jllsq.common.BasicFileWriter;
+import com.jllsq.holder.buffer.RedisServerByteBufferHolder;
+import com.jllsq.holder.buffer.entity.BasicBuffer;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -24,6 +26,8 @@ public class RedisLog extends BasicFileWriter {
 
     private static final String LOG_FORMAT = "Time: %s - Pid: %s - [ %s ] - %s \r\n";
 
+    private RedisServerByteBufferHolder byteBufferHolder;
+
     enum  RedisLogEnum{
         /**
          * RedisLog singleton implementation.
@@ -42,16 +46,18 @@ public class RedisLog extends BasicFileWriter {
     }
 
     private RedisLog() {
+        this.byteBufferHolder = RedisServerByteBufferHolder.getInstance();
     }
 
     public void log(int level, String ... logs) throws IOException {
         for (String log:logs) {
-            String formatLog = formatLog(log,level);
-            System.out.print(formatLog);
+            byte[] bytes = formatLog(log,level).getBytes();
+            System.out.write(bytes);
+            BasicBuffer basicBuffer = new BasicBuffer(bytes.length,bytes);
             if (logFile != null) {
                 BasicLog basicLog = new BasicLog();
-                basicLog.setBytes(formatLog.getBytes());
-                basicLog.setFileName(logFile);
+                basicLog.setBuffer(basicBuffer);
+                basicLog.setFileOutputStream(outputStream);
                 LogContainer.getInstance().put(basicLog);
             }
         }
