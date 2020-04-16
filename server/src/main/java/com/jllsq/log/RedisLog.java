@@ -56,6 +56,7 @@ public class RedisLog extends BasicFileWriter {
             BasicBuffer basicBuffer = new BasicBuffer(bytes.length,bytes);
             if (logFile != null) {
                 BasicLog basicLog = new BasicLog();
+//                basicLog.setNeedConsolePrinted(true);
                 basicLog.setBuffer(basicBuffer);
                 basicLog.setFileOutputStream(outputStream);
                 LogContainer.getInstance().put(basicLog);

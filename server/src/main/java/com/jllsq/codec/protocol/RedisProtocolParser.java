@@ -18,51 +18,56 @@ public class RedisProtocolParser {
     public static RedisClient readProtocolToExistedRedisClient(ByteBuf in,RedisClient redisClient) throws Exception {
         RedisServerObjectHolder holder = RedisServerObjectHolder.getInstance();
         RedisClient rs = null;
+        RedisServerByteBufferHolder byteBufferHolder = RedisServerByteBufferHolder.getInstance();
         if (in.isReadable()) {
+            BasicBuffer basicBuffer = byteBufferHolder.getRedisClientBufferFromPool(in.writerIndex());
+            in.readBytes(basicBuffer.getBuffer(),0,in.writerIndex());
+            basicBuffer.setUsed(in.writerIndex());
             if (redisClient == null) {
                 rs = new RedisClient();
             } else {
                 rs = redisClient;
             }
             rs.clearArgs();
-            if (in.readByte() != STAR) {
+            byte[] buffer = basicBuffer.getBuffer();
+            if (buffer[0] != STAR) {
                 System.out.println("error");
             }
-            byte[] readLineBuffer = RedisServerByteBufferHolder.getInstance().getReadLineBuffer();
-            int readLineBufferLength = ByteBufUtil.readLineToExistedBuffer(in,readLineBuffer);
-            if (readLineBuffer[readLineBufferLength - 2] != CR || readLineBuffer[readLineBufferLength - 1] != LF) {
+            int index = 1;
+            int used = basicBuffer.getUsed();
+            int endIndex = ByteBufUtil.readLineFromBuffer(basicBuffer.getBuffer(),index,basicBuffer.getUsed());
+            if (buffer[endIndex - 2] != CR || buffer[endIndex - 1] != LF) {
                 System.out.println("error");
             }
-            int length = byteArrayToInt(readLineBuffer,0,readLineBufferLength-2);
+            int length = byteArrayToInt(buffer,index,endIndex-2);
             RedisObject[] argv = new RedisObject[length];
+            index = endIndex;
             for (int i = 0; i < length; i++) {
-                byte dollar = in.readByte();
+                byte dollar = buffer[index];
                 if (dollar != '$') {
                     System.out.println("error");
                 }
-                readLineBufferLength = ByteBufUtil.readLineToExistedBuffer(in,readLineBuffer);
-                if (readLineBuffer[readLineBufferLength - 2] != CR || readLineBuffer[readLineBufferLength - 1] != LF) {
+                index ++;
+                endIndex = ByteBufUtil.readLineFromBuffer(buffer,index,used);
+                if (buffer[endIndex - 2] != CR || buffer[endIndex - 1] != LF) {
                     System.out.println("error");
                 }
-                int commandLen = byteArrayToInt(readLineBuffer,0,readLineBufferLength-2);
-                ByteBuf command = in.readBytes(commandLen);
+                int commandLen = byteArrayToInt(buffer,index,endIndex-2);
+                index = endIndex;
                 byte[] buff = new byte[commandLen];
-                command.getBytes(0, buff);
+                System.arraycopy(buffer,index,buff,0,commandLen);
                 argv[i] = holder.createObject(false, REDIS_STRING, new SDS(buff));
-                ByteBuf nextLine = in.readBytes(2);
-                if (nextLine.getByte(0) != CR || nextLine.getByte(1) != LF) {
+                index += commandLen;
+                if (buffer[index] != CR || (index != used-1 && buffer[index+1] != LF)) {
                     System.out.println("error");
                 }
+                index += 2;
             }
-            in.resetReaderIndex();
-            RedisServerByteBufferHolder byteBufferHolder = RedisServerByteBufferHolder.getInstance();
-            BasicBuffer basicBuffer = byteBufferHolder.getRedisClientBufferFromPool(in.writerIndex());
-            in.readBytes(basicBuffer.getBuffer(),0,in.writerIndex());
-            basicBuffer.setUsed(in.writerIndex());
             rs.setBuffer(basicBuffer);
             rs.setArgc(length);
             rs.setArgv(argv);
         }
+//        System.out.println(redisClient);
         return rs;
     }
 

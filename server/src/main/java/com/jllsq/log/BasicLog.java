@@ -8,6 +8,7 @@ import java.io.OutputStream;
 @Data
 public class BasicLog {
 
+//    private boolean needConsolePrinted;
     private OutputStream fileOutputStream;
     private BasicBuffer buffer;
 

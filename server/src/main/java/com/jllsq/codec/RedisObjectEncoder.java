@@ -4,6 +4,8 @@ import com.jllsq.common.basic.list.List;
 import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.common.util.LongUtils;
+import com.jllsq.holder.buffer.RedisServerByteBufferHolder;
+import com.jllsq.holder.buffer.entity.BasicBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,6 +16,13 @@ import java.util.Iterator;
 import static com.jllsq.holder.RedisServerObjectHolder.*;
 
 public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
+
+    private RedisServerByteBufferHolder  redisServerByteBufferHolder;
+
+    public RedisObjectEncoder(){
+        this.redisServerByteBufferHolder = RedisServerByteBufferHolder.getInstance();
+    }
+
     @Override
     protected void encode(ChannelHandlerContext ctx, RedisObject msg, ByteBuf out) throws Exception {
         if (msg == null) {
@@ -29,14 +38,18 @@ public class RedisObjectEncoder extends MessageToByteEncoder<RedisObject> {
             else {
                 if (msg.getType() == REDIS_STRING) {
                     byte[] temp = ((SDS)ptr).getBytes();
-                    byte[] content = new byte[((SDS)ptr).getUsed()+5];
+                    int size =temp.length+5;
+                    BasicBuffer buffer= redisServerByteBufferHolder.getRedisClientBufferFromPool(size);
+                    byte[] content = buffer.getBuffer();
                     content[0]='+';
                     content[1]='"';
                     content[content.length-3] = '"';
                     content[content.length-1] = '\n';
                     content[content.length-2] = '\r';
                     System.arraycopy(temp,8,content,2,((SDS)ptr).getUsed());
-                    out.writeBytes(Unpooled.copiedBuffer(content));
+                    buffer.setUsed(size);
+                    out.writeBytes(content,0,buffer.getUsed());
+                    redisServerByteBufferHolder.recycleBuffer(buffer);
                 } else if (msg.getType() == REDIS_LIST) {
                     List<SDS> list = (List<SDS>) ptr;
                     Iterator<SDS> iterator = list.iterator();

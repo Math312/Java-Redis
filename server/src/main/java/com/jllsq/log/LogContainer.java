@@ -40,6 +40,9 @@ public class LogContainer extends Thread{
                 BasicLog basicLog = container.take();
                 BasicBuffer basicBuffer = basicLog.getBuffer();
                 basicLog.getFileOutputStream().write(basicBuffer.getBuffer(),0,basicBuffer.getUsed());
+//                if (basicLog.isNeedConsolePrinted()) {
+//                    System.out.write(basicBuffer.getBuffer(),0,basicBuffer.getUsed());
+//                }
                 byteBufferHolder.recycleBuffer(basicBuffer);
             }
         } catch (InterruptedException | IOException e) {

@@ -28,4 +28,14 @@ public class ByteBufUtil {
         }while (readByte != '\n');
         return i;
     }
+
+    public static int readLineFromBuffer(byte[] buffer,int offset,int end){
+        byte readByte;
+        int i = offset;
+        do {
+            readByte = buffer[i];
+            i ++;
+        }while (readByte != '\n' && i < end);
+        return i;
+    }
 }
