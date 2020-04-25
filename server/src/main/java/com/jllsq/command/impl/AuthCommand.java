@@ -21,6 +21,11 @@ public class AuthCommand extends RedisCommand {
     }
 
     @Override
+    public void recycleRedisObject(RedisClient client) {
+
+    }
+
+    @Override
     public void initChain() {
         super.initChain();
         handlerChain.add(new RedisCommandInitClientHandler());

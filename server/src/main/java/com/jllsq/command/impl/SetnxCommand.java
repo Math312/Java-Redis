@@ -11,7 +11,6 @@ import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.RedisObject;
 import com.jllsq.config.Shared;
 import com.jllsq.holder.RedisServerStateHolder;
-import org.apache.commons.lang3.SerializationUtils;
 
 public class SetnxCommand extends RedisCommand {
 
@@ -24,8 +23,8 @@ public class SetnxCommand extends RedisCommand {
     public RedisObject process(RedisClient client) {
         RedisDb db = client.getDb();
         RedisObject result = null;
-        RedisObject key = SerializationUtils.clone(client.getArgv()[1]);
-        RedisObject value = SerializationUtils.clone(client.getArgv()[2]);
+        RedisObject key = client.getArgv()[1];
+        RedisObject value = client.getArgv()[2];
         if (db.getDict().find(key) == null) {
             if (db.getDict().add(key,value)) {
                 db.getExpires().delete(client.getArgv()[1]);
@@ -38,8 +37,11 @@ public class SetnxCommand extends RedisCommand {
         }
         result = Shared.getInstance().getCzero();
         return result;
+    }
 
-
+    @Override
+    public void recycleRedisObject(RedisClient client) {
+        redisServerObjectHolder.deleteObject(client.getArgv()[0]);
     }
 
     @Override

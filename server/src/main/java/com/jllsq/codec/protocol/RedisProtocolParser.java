@@ -3,13 +3,13 @@ package com.jllsq.codec.protocol;
 import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
+import com.jllsq.common.util.config.ByteBufUtil;
 import com.jllsq.holder.RedisServerObjectHolder;
+import com.jllsq.holder.buffer.RedisServerByteBufferHolder;
+import com.jllsq.holder.buffer.entity.BasicBuffer;
 import io.netty.buffer.ByteBuf;
 
-import java.util.Arrays;
-
 import static com.jllsq.common.util.config.ByteArrayUtil.byteArrayToInt;
-import static com.jllsq.common.util.config.ByteBufUtil.readLine;
 import static com.jllsq.config.Constants.*;
 import static com.jllsq.holder.RedisServerObjectHolder.REDIS_STRING;
 
@@ -18,46 +18,56 @@ public class RedisProtocolParser {
     public static RedisClient readProtocolToExistedRedisClient(ByteBuf in,RedisClient redisClient) throws Exception {
         RedisServerObjectHolder holder = RedisServerObjectHolder.getInstance();
         RedisClient rs = null;
+        RedisServerByteBufferHolder byteBufferHolder = RedisServerByteBufferHolder.getInstance();
         if (in.isReadable()) {
+            BasicBuffer basicBuffer = byteBufferHolder.getRedisClientBufferFromPool(in.writerIndex());
+            in.readBytes(basicBuffer.getBuffer(),0,in.writerIndex());
+            basicBuffer.setUsed(in.writerIndex());
             if (redisClient == null) {
                 rs = new RedisClient();
             } else {
                 rs = redisClient;
             }
             rs.clearArgs();
-            if (in.readByte() != STAR) {
+            byte[] buffer = basicBuffer.getBuffer();
+            if (buffer[0] != STAR) {
                 System.out.println("error");
             }
-            byte[] head = readLine(in);
-            if (head[head.length - 2] != CR || head[head.length - 1] != LF) {
+            int index = 1;
+            int used = basicBuffer.getUsed();
+            int endIndex = ByteBufUtil.readLineFromBuffer(basicBuffer.getBuffer(),index,basicBuffer.getUsed());
+            if (buffer[endIndex - 2] != CR || buffer[endIndex - 1] != LF) {
                 System.out.println("error");
             }
-            byte[] num = Arrays.copyOf(head, head.length - 2);
-            int length = byteArrayToInt(num);
+            int length = byteArrayToInt(buffer,index,endIndex-2);
             RedisObject[] argv = new RedisObject[length];
+            index = endIndex;
             for (int i = 0; i < length; i++) {
-                byte dollar = in.readByte();
+                byte dollar = buffer[index];
                 if (dollar != '$') {
                     System.out.println("error");
                 }
-                byte[] commandArgv = readLine(in);
-                if (commandArgv[commandArgv.length - 2] != CR || commandArgv[commandArgv.length - 1] != LF) {
+                index ++;
+                endIndex = ByteBufUtil.readLineFromBuffer(buffer,index,used);
+                if (buffer[endIndex - 2] != CR || buffer[endIndex - 1] != LF) {
                     System.out.println("error");
                 }
-                num = Arrays.copyOf(commandArgv, commandArgv.length - 2);
-                int commandLen = byteArrayToInt(num);
-                ByteBuf command = in.readBytes(commandLen);
+                int commandLen = byteArrayToInt(buffer,index,endIndex-2);
+                index = endIndex;
                 byte[] buff = new byte[commandLen];
-                command.getBytes(0, buff);
+                System.arraycopy(buffer,index,buff,0,commandLen);
                 argv[i] = holder.createObject(false, REDIS_STRING, new SDS(buff));
-                ByteBuf nextLine = in.readBytes(2);
-                if (nextLine.getByte(0) != CR || nextLine.getByte(1) != LF) {
+                index += commandLen;
+                if (buffer[index] != CR || (index != used-1 && buffer[index+1] != LF)) {
                     System.out.println("error");
                 }
+                index += 2;
             }
+            rs.setBuffer(basicBuffer);
             rs.setArgc(length);
             rs.setArgv(argv);
         }
+//        System.out.println(redisClient);
         return rs;
     }
 

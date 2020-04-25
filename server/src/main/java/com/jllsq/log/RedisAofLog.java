@@ -4,7 +4,6 @@ import com.jllsq.common.BasicFileWriter;
 import com.jllsq.common.basic.sds.SDS;
 import com.jllsq.common.entity.RedisClient;
 import com.jllsq.common.entity.RedisObject;
-import com.jllsq.common.util.AofUtil;
 import com.jllsq.holder.RedisServerObjectHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -49,11 +48,10 @@ public class RedisAofLog extends BasicFileWriter {
     }
 
     public void write(RedisClient client) throws IOException {
-        byte[] bytes = AofUtil.encode(client);
         if (logFile != null) {
             BasicLog basicLog = new BasicLog();
-            basicLog.setBytes(bytes);
-            basicLog.setFileName(logFile);
+            basicLog.setBuffer(client.getBuffer());
+            basicLog.setFileOutputStream(outputStream);
             LogContainer.getInstance().put(basicLog);
         }
     }

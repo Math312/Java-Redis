@@ -13,10 +13,7 @@ import com.jllsq.common.entity.RedisDb;
 import com.jllsq.common.entity.SaveParam;
 import com.jllsq.config.Shared;
 import com.jllsq.handler.RedisServerHandler;
-import com.jllsq.holder.RedisServerDbHolder;
-import com.jllsq.holder.RedisServerEventLoopHolder;
-import com.jllsq.holder.RedisServerObjectHolder;
-import com.jllsq.holder.RedisServerStateHolder;
+import com.jllsq.holder.*;
 import com.jllsq.holder.client.RedisServerClientHolder;
 import com.jllsq.log.RedisAofLog;
 import com.jllsq.log.RedisLog;
@@ -243,7 +240,8 @@ public class RedisServer {
                     java.util.List<RedisClient> list = RedisAofLog.getInstance().readClient();
                     for (RedisClient client:list) {
                         client.setDictId(RedisServerDbHolder.getInstance().getSelectedDbIndex());
-                        processor.process(client);
+                        client.setDb(RedisServerDbHolder.getInstance().getDb()[client.getDictId()]);
+                        RedisServerCommandHolder.getInstance().getIgnoreCase((SDS) (client.getArgv()[0].getPtr())).process(client);
                     }
                 }
             } catch (IOException e) {
